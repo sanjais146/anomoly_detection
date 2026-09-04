@@ -1,0 +1,14 @@
+{
+    "Test_F1": 0.5648457822370866,
+    "Test_Precision": 0.6701940035273368,
+    "Test_Recall": 0.4881181759794477,
+    "Test_AUROC": 0.923647400870272,
+    "Test_AUPRC": 0.5688136450197654,
+    "Test_FPR": 0.00867628636384726,
+    "TP": 1520,
+    "TN": 85464,
+    "FP": 748,
+    "FN": 1594,
+    "Validation_Threshold": 0.8373366834170854,
+    "Model": "E6 7-Day Delayed-Induction CatBoost"
+}

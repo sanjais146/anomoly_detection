@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Fraud Detection Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="logo">E-commerce Fraud Detection</div>
+        <div class="status-indicator">
+            <span class="dot"></span> Model Active (E10 Ensemble)
+        </div>
+    </header>
+    
+    <div class="warning-banner">
+        ⚠️ This is a research demonstration system. Predictions use a simulated historical feature context.
+    </div>
+
+    <main class="dashboard">
+        <section class="panel form-panel">
+            <h2>Transaction Input</h2>
+            <form id="predict-form">
+                <div class="form-group">
+                    <label>Transaction Amount (USD)</label>
+                    <input type="number" step="0.01" id="TransactionAmt" required value="150.00">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Product CD</label>
+                        <select id="ProductCD"><option value="W">W</option><option value="C">C</option><option value="H">H</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Card1 ID</label>
+                        <input type="number" id="card1" required value="10409">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Purchaser Email Domain</label>
+                        <input type="text" id="P_emaildomain" value="gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Recipient Email Domain</label>
+                        <input type="text" id="R_emaildomain" value="">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" id="run-btn">Run Prediction</button>
+            </form>
+        </section>
+
+        <section class="panel result-panel">
+            <h2>Prediction Result</h2>
+            <div id="result-container" class="hidden">
+                <div class="prob-circle" id="prob-circle">
+                    <span id="prob-value">0%</span>
+                </div>
+                <div class="result-details">
+                    <div class="detail-row">
+                        <span class="label">Decision:</span>
+                        <span class="value" id="res-decision">Legitimate</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Risk Level:</span>
+                        <span class="value badge" id="res-risk">LOW</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label">Threshold:</span>
+                        <span class="value" id="res-thresh">0.4040</span>
+                    </div>
+                </div>
+                <div class="signals">
+                    <h3>Detected Signals</h3>
+                    <ul id="signal-list"></ul>
+                </div>
+            </div>
+            
+            <div class="model-info">
+                <h3>Model Information</h3>
+                <p><strong>Model:</strong> E10 Causal CatBoost Ensemble</p>
+                <p><strong>Evaluation:</strong> Chronological / causal</p>
+                <p><strong>Label delay:</strong> 7 days</p>
+                <p><strong>Test F1:</strong> 62.25% | <strong>AUROC:</strong> 0.9378</p>
+            </div>
+        </section>
+    </main>
+    <script src="/static/script.js"></script>
+</body>
+</html>
