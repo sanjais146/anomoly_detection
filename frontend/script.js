@@ -203,6 +203,115 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error("Failed to load analytics:", e);
         }
+
+        // --- Load Dense Anomaly Analytics ---
+        try {
+            const res = await fetch('/analytics/amazon/anomalies');
+            const data = await res.json();
+            
+            if (data.status === 'success') {
+                document.getElementById('aa-kpi-total').innerText = data.kpi.total_analyzed;
+                document.getElementById('aa-kpi-anomalous').innerText = data.kpi.anomalous_count;
+                document.getElementById('aa-kpi-rate').innerText = data.kpi.anomaly_rate + '%';
+                document.getElementById('aa-kpi-threshold').innerText = data.kpi.threshold;
+
+                const timeSeriesLabels = [];
+                const timeSeriesData = [];
+                const pointColors = [];
+                
+                // Sort by probability descending for the table
+                const topAnomalies = [...data.time_series].sort((a, b) => b.anomaly_probability - a.anomaly_probability);
+                const tbody = document.getElementById('aa-table-tbody');
+                tbody.innerHTML = '';
+                
+                topAnomalies.forEach(inf => {
+                    const dt = new Date(inf.unixReviewTime * 1000).toLocaleString();
+                    const statusHtml = inf.is_anomalous 
+                        ? `<span class="badge bg-red-500">ANOMALY</span>` 
+                        : `<span class="badge bg-gray-700">NORMAL</span>`;
+                        
+                    const rowClass = inf.is_anomalous ? "bg-red-900 bg-opacity-20" : "";
+                        
+                    tbody.innerHTML += `
+                        <tr class="${rowClass}">
+                            <td class="text-xs text-gray-400">${dt}</td>
+                            <td class="font-mono text-xs">${inf.reviewerID}</td>
+                            <td class="font-mono text-xs">${inf.asin}</td>
+                            <td>${inf.rating} <i class="fa-solid fa-star text-yellow-500 text-xs"></i></td>
+                            <td class="font-mono font-bold ${inf.is_anomalous ? 'text-red-500' : 'text-green-500'}">${inf.anomaly_probability.toFixed(3)}</td>
+                            <td>${statusHtml}</td>
+                        </tr>
+                    `;
+                });
+
+                data.time_series.sort((a, b) => a.unixReviewTime - b.unixReviewTime).forEach(inf => {
+                    timeSeriesLabels.push(new Date(inf.unixReviewTime * 1000).toLocaleDateString());
+                    timeSeriesData.push(inf.anomaly_probability);
+                    pointColors.push(inf.is_anomalous ? '#ef4444' : '#60a5fa');
+                });
+
+                const ctx = document.getElementById('chart-anomaly-timeseries');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: timeSeriesLabels,
+                            datasets: [{
+                                label: 'Anomaly Probability',
+                                data: timeSeriesData,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                pointBackgroundColor: pointColors,
+                                pointBorderColor: pointColors,
+                                pointRadius: 4,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                annotation: {
+                                    annotations: {
+                                        line1: {
+                                            type: 'line',
+                                            yMin: data.kpi.threshold,
+                                            yMax: data.kpi.threshold,
+                                            borderColor: '#ef4444',
+                                            borderWidth: 1,
+                                            borderDash: [5, 5],
+                                            label: {
+                                                display: true,
+                                                content: 'Threshold ' + data.kpi.threshold,
+                                                position: 'end',
+                                                backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true, 
+                                    max: 1.0, 
+                                    grid: { color: '#374151' },
+                                    ticks: { color: '#9ca3af' }
+                                },
+                                x: { 
+                                    grid: { color: '#374151', display: false },
+                                    ticks: { color: '#9ca3af', maxTicksLimit: 10 }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load anomaly batch:", e);
+            document.getElementById('aa-table-tbody').innerHTML = `<tr><td colspan="6" class="text-center text-red-500">Failed to load real inference data.</td></tr>`;
+        }
     }
     loadAnalytics();
 

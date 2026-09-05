@@ -114,11 +114,21 @@ def research_metrics():
         
     return JSONResponse(content=data)
 
+from app.analytics_anomalies import get_amazon_batch_anomalies
+
 @app.get("/analytics/amazon")
 def analytics_amazon():
     """Serves real Amazon dataset stats and sample graph interactions."""
     try:
         return get_amazon_analytics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analytics/amazon/anomalies")
+def analytics_amazon_anomalies():
+    """Serves real anomaly scores for a batch of verified Amazon interactions."""
+    try:
+        return get_amazon_batch_anomalies()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
