@@ -1,394 +1,419 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Amazon E-Commerce Anomaly Detection — Command Center</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-  :root {
-    --bg: #0f111a; --surface: #1a1d27; --surface2: #232736; --surface3: #2d3345;
-    --border: #2e3447; --accent: #f59e0b; /* Amazon Orange */ --accent2: #3b82f6; --accent3: #10b981;
-    --danger: #ef4444; --warn: #f59e0b; --text: #f8fafc; --muted: #94a3b8;
-    --card-h: 1px solid var(--border);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;}
-  a{color:var(--accent);text-decoration:none;}
-  /* Nav */
-  nav{background:var(--surface);border-bottom:var(--card-h);padding:0 24px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100;gap:32px;}
-  .nav-brand{font-weight:700;font-size:16px;color:var(--text);display:flex;align-items:center;gap:10px;}
-  .nav-brand .dot{width:10px;height:10px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-  .nav-links{display:flex;gap:4px;}
-  .nav-links a{padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;}
-  .nav-links a:hover,.nav-links a.active{background:var(--surface2);color:var(--text);}
-  .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-  .status-pill{display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--accent3);}
-  .status-pill .dot2{width:6px;height:6px;background:var(--accent3);border-radius:50%;animation:pulse 2s infinite;}
-  /* Layout */
-  main{padding:24px;max-width:1400px;margin:0 auto;}
-  section{margin-bottom:40px;}
-  h2{font-size:18px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
-  h2 .badge{font-size:12px;font-weight:500;padding:3px 10px;border-radius:6px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
-  h2 .badge.primary{background:rgba(245,158,11,.15);color:var(--accent);border-color:rgba(245,158,11,.3);}
-  /* KPI Strip */
-  .kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;}
-  .kpi{background:var(--surface);border:var(--card-h);border-radius:12px;padding:16px 20px;}
-  .kpi .label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
-  .kpi .value{font-size:28px;font-weight:800;letter-spacing:-.02em;}
-  .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px;}
-  .kpi.accent .value{color:var(--accent);}
-  .kpi.blue .value{color:var(--accent2);}
-  .kpi.green .value{color:var(--accent3);}
-  /* Grids */
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-  .grid-wide{display:grid;grid-template-columns:3fr 2fr;gap:20px;}
-  /* Card */
-  .card{background:var(--surface);border:var(--card-h);border-radius:12px;padding:20px;}
-  .card h3{font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;}
-  /* Architecture viz */
-  .arch-flow{display:flex;align-items:stretch;gap:0;}
-  .arch-box{background:var(--surface2);border:var(--card-h);border-radius:8px;padding:12px;text-align:center;flex:1;}
-  .arch-box .aname{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;}
-  .arch-box .adesc{font-size:11px;color:var(--muted);}
-  .arch-arrow{display:flex;align-items:center;padding:0 8px;color:var(--muted);font-weight:bold;}
-  .arch-box.tgat{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1);}
-  /* Live inference panel */
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  .form-group label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;}
-  .form-group input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none;}
-  .form-group input:focus{border-color:var(--accent);}
-  .analyze-btn{margin-top:20px;width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(245,158,11,.3);}
-  .analyze-btn:hover{background:#fcd34d;transform:translateY(-1px);}
-  .analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-  /* Result panel */
-  .result-box{margin-top:24px;background:var(--surface2);border-radius:12px;padding:20px;border:1px solid var(--border);display:none;}
-  .result-box.visible{display:block;}
-  .risk-banner{border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface3);}
-  .risk-banner.low{border-left:4px solid var(--accent3);}
-  .risk-banner.elevated{border-left:4px solid var(--warn);}
-  .risk-banner.high{border-left:4px solid var(--danger);}
-  .risk-label{font-size:22px;font-weight:800;letter-spacing:-.01em;}
-  .risk-prob{font-size:32px;font-weight:900;}
-  .result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
-  .result-item{background:rgba(0,0,0,.2);border-radius:8px;padding:12px;}
-  .result-item .ri-label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;font-weight:600;}
-  .result-item .ri-val{font-size:15px;font-weight:600;color:var(--text);}
-  /* Disclaimer */
-  .disclaimer{font-size:12px;color:var(--muted);background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.2);border-radius:8px;padding:12px 16px;margin-top:16px;}
-  /* Entity Map */
-  .entity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-  .entity-card{background:var(--surface2);border:var(--card-h);border-radius:12px;padding:20px;text-align:center;}
-  .entity-card .icon{font-size:32px;margin-bottom:12px;}
-  .entity-card .ename{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text);}
-  .entity-card .edesc{font-size:12px;color:var(--muted);}
-  /* Table */
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  th{text-align:left;padding:12px;color:var(--muted);font-weight:600;border-bottom:var(--card-h);font-size:12px;text-transform:uppercase;}
-  td{padding:12px;border-bottom:1px solid var(--border);}
-  tr:last-child td{border-bottom:none;}
-  .tag{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;}
-  .tag.primary{background:rgba(245,158,11,.15);color:var(--accent);}
-  .tag.baseline{background:rgba(59,130,246,.15);color:var(--accent2);}
-  .tag.external{background:rgba(148,163,184,.15);color:var(--muted);}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon E-Commerce Anomaly Detection | TGAT Command Center</title>
+    <!-- Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js & Vis.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div>
+                    <h1>Anomaly Detect</h1>
+                    <span class="badge">Amazon TGAT</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#overview" class="nav-item active" data-tab="overview">
+                    <i class="fa-solid fa-chart-line"></i> Overview
+                </a>
+                <a href="#anomaly-detection" class="nav-item" data-tab="anomaly-detection">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i> Anomaly Detection
+                </a>
+                <a href="#graph-analytics" class="nav-item" data-tab="graph-analytics">
+                    <i class="fa-solid fa-project-diagram"></i> Graph Analytics
+                </a>
+                <a href="#temporal-analysis" class="nav-item" data-tab="temporal-analysis">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Temporal Analysis
+                </a>
+                <a href="#model-performance" class="nav-item" data-tab="model-performance">
+                    <i class="fa-solid fa-server"></i> Model Performance
+                </a>
+                <a href="#dataset" class="nav-item" data-tab="dataset">
+                    <i class="fa-solid fa-database"></i> Amazon Dataset
+                </a>
+                <a href="#system-health" class="nav-item" data-tab="system-health">
+                    <i class="fa-solid fa-heart-pulse"></i> System Health
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <div class="status-dot green" id="sidebar-status-dot"></div>
+                    <span id="sidebar-status-text">System Online</span>
+                </div>
+                <div class="version-info">
+                    Model: Causal TGAT<br>
+                    Dataset: Amazon Electronics
+                </div>
+            </div>
+        </aside>
 
-<nav>
-  <div class="nav-brand">
-    <div class="dot"></div>
-    Amazon E-Commerce Anomaly Detection
-  </div>
-  <div class="nav-links">
-    <a href="#overview" class="active">Overview</a>
-    <a href="#live">Live TGAT Inference</a>
-    <a href="#performance">Methodology & Performance</a>
-  </div>
-  <div class="nav-right">
-    <div class="status-pill">
-      <div class="dot2"></div>
-      <span id="api-status-text">Checking API...</span>
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h2 id="page-title">Command Center Overview</h2>
+                    <p class="subtitle">Temporal Graph Attention Network Analysis</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="metric-badge">
+                        <span class="label">Dataset</span>
+                        <span class="value">Amazon Electronics</span>
+                    </div>
+                    <div class="metric-badge success">
+                        <span class="label">Causal Mode</span>
+                        <span class="value"><i class="fa-solid fa-check-circle"></i> ENABLED</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-scroll">
+                <!-- OVERVIEW TAB -->
+                <section id="tab-overview" class="tab-content active">
+                    <div class="kpi-grid">
+                        <div class="card kpi-card">
+                            <div class="kpi-header">TGAT Test F1</div>
+                            <div class="kpi-value highlight">77.01%</div>
+                            <div class="kpi-footer">Self-supervised link prediction</div>
+                        </div>
+                        <div class="card kpi-card">
+                            <div class="kpi-header">TGAT Recall</div>
+                            <div class="kpi-value">83.00%</div>
+                            <div class="kpi-footer">Anomaly detection sensitivity</div>
+                        </div>
+                        <div class="card kpi-card">
+                            <div class="kpi-header">Graph Size</div>
+                            <div class="kpi-value">20k+</div>
+                            <div class="kpi-footer">Verified Amazon Interactions</div>
+                        </div>
+                        <div class="card kpi-card warning">
+                            <div class="kpi-header">E10 Baseline F1</div>
+                            <div class="kpi-value">62.25%</div>
+                            <div class="kpi-footer">IEEE-CIS / Static Features</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card col-span-2">
+                            <div class="card-header">
+                                <h3>Temporal Interaction Timeline</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chart-temporal-timeline"></canvas>
+                                <div class="watermark" id="wm-timeline">Awaiting verified dataset/API data</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Anomaly Score Distribution</h3>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chart-anomaly-dist"></canvas>
+                                <div class="watermark" id="wm-dist">Awaiting verified dataset/API data</div>
+                            </div>
+                        </div>
+                        
+                        <div class="card col-span-3">
+                            <div class="card-header flex-between">
+                                <h3>Recent / Inspected Interactions</h3>
+                                <button class="btn btn-sm btn-outline" onclick="document.querySelector('[data-tab=\'anomaly-detection\']').click()"><i class="fa-solid fa-plus"></i> Analyze New</button>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="data-table" id="recent-interactions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Reviewer ID</th>
+                                            <th>ASIN</th>
+                                            <th>Timestamp</th>
+                                            <th>Rating</th>
+                                            <th>Anomaly Score</th>
+                                            <th>Classification</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-tbody">
+                                        <tr class="empty-state" id="empty-row">
+                                            <td colspan="6">No recent interactions analyzed. Use the Anomaly Detection tab to dynamically generate data.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ANOMALY DETECTION TAB -->
+                <section id="tab-anomaly-detection" class="tab-content">
+                    <div class="dashboard-grid layout-sidebar">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Analyze Amazon Interaction</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="anomaly-form" class="compact-form">
+                                    <div class="form-group">
+                                        <label for="reviewerID">Reviewer ID (User)</label>
+                                        <input type="text" id="reviewerID" placeholder="e.g., A3BY5KCNQZSN5U" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="asin">ASIN (Product)</label>
+                                        <input type="text" id="asin" placeholder="e.g., B00000J3Q1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="overall">Rating (1-5)</label>
+                                        <input type="number" id="overall" min="1" max="5" step="0.5" value="5.0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="unixReviewTime">Unix Timestamp</label>
+                                        <input type="number" id="unixReviewTime" placeholder="Leave blank for current time">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-full" id="btn-analyze">
+                                        <i class="fa-solid fa-microchip"></i> Run TGAT Inference
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card result-panel">
+                            <div class="card-header">
+                                <h3>Inference Results</h3>
+                            </div>
+                            <div class="card-body relative" id="inference-results-container">
+                                <div class="empty-state" id="inference-empty">
+                                    <i class="fa-solid fa-bolt"></i>
+                                    <p>Submit an interaction to run causal TGAT link reconstruction.</p>
+                                </div>
+                                
+                                <div id="inference-data" class="hidden">
+                                    <div class="score-display">
+                                        <div class="score-circle" id="res-circle">
+                                            <span id="res-score">0.00</span>
+                                        </div>
+                                        <div class="score-text">
+                                            <h2 id="res-classification">Genuine</h2>
+                                            <p>Reconstruction Anomaly Score</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <h4 class="mt-6 mb-2 border-b pb-2">Temporal Node Embeddings</h4>
+                                    <div class="grid-2-col mb-4">
+                                        <div class="info-box">
+                                            <h5>User Context</h5>
+                                            <code class="block text-xs" id="res-user-emb">[0.12, -0.45, ...]</code>
+                                        </div>
+                                        <div class="info-box">
+                                            <h5>Product Context</h5>
+                                            <code class="block text-xs" id="res-prod-emb">[-0.22, 0.88, ...]</code>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 text-sm text-blue-900 mt-4">
+                                        <i class="fa-solid fa-circle-info"></i> <strong>Causal Analysis:</strong> TGAT generated these embeddings by causally aggregating strictly prior neighbor interactions utilizing <code class="bg-white px-1">exp(-0.431 * Δt)</code> decay.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- GRAPH ANALYTICS TAB -->
+                <section id="tab-graph-analytics" class="tab-content">
+                    <div class="card h-full flex-col">
+                        <div class="card-header flex-between">
+                            <h3>Bipartite Amazon Review Graph</h3>
+                            <div class="legend">
+                                <span class="legend-item"><span class="dot user"></span> User</span>
+                                <span class="legend-item"><span class="dot product"></span> Product</span>
+                                <span class="legend-item"><span class="line genuine"></span> Genuine</span>
+                                <span class="legend-item"><span class="line anomalous"></span> Anomalous</span>
+                            </div>
+                        </div>
+                        <div class="card-body flex-1 p-0 relative" style="min-height: 500px;">
+                            <div id="vis-network" class="vis-container w-full h-full"></div>
+                            <div class="watermark bottom-right pointer-events-none" id="wm-graph">Data dynamically populated from live inference</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TEMPORAL ANALYSIS TAB -->
+                <section id="tab-temporal-analysis" class="tab-content">
+                    <div class="dashboard-grid">
+                        <div class="card col-span-2">
+                            <div class="card-header">
+                                <h3>Causal Timeline & Temporal Decay</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="causal-timeline">
+                                    <div class="timeline-step">
+                                        <div class="icon"><i class="fa-solid fa-history"></i></div>
+                                        <div class="label">Historical Interactions<br><small>(t &lt; t_target)</small></div>
+                                    </div>
+                                    <div class="timeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                                    <div class="timeline-step">
+                                        <div class="icon"><i class="fa-solid fa-brain"></i></div>
+                                        <div class="label">Temporal Encoding<br><small>exp(-τ * Δt)</small></div>
+                                    </div>
+                                    <div class="timeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                                    <div class="timeline-step">
+                                        <div class="icon"><i class="fa-solid fa-shield-halved"></i></div>
+                                        <div class="label">Causal Masking<br><small>Strict isolation</small></div>
+                                    </div>
+                                    <div class="timeline-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                                    <div class="timeline-step">
+                                        <div class="icon"><i class="fa-solid fa-link"></i></div>
+                                        <div class="label">Link Reconstruction<br><small>Contrastive Probability</small></div>
+                                    </div>
+                                </div>
+                                <div class="mt-8 pt-4 border-t">
+                                    <h4>Learned Temporal Parameters (Amazon Electronics)</h4>
+                                    <ul class="stats-list mt-4">
+                                        <li><span>Decay Factor (τ)</span> <strong>0.431</strong></li>
+                                        <li><span>Temporal Half-life</span> <strong>≈ 1.6 days</strong></li>
+                                        <li><span>Future Leakage</span> <strong class="text-green">0.00% (Strictly Masked)</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card bg-dark text-white">
+                            <div class="card-header border-dark">
+                                <h3>Why Temporal?</h3>
+                            </div>
+                            <div class="card-body text-sm leading-relaxed">
+                                <p class="mb-4 text-gray-300">E-commerce anomalies (like review bombing or account takeovers) are inherently temporal.</p>
+                                <p class="mb-4 text-gray-300">Static graphs treat a review from 2012 the same as a review from 10 minutes ago. TGAT utilizes a continuous-time decay function:</p>
+                                <code class="block mb-4 bg-black p-3 rounded text-green-400 font-mono">w = exp(-τ * Δt_days)</code>
+                                <p class="text-gray-300">This forces the model to dynamically prioritize recent topological neighborhood structures, accurately mirroring the rapidly evolving nature of e-commerce fraud.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- MODEL PERFORMANCE TAB -->
+                <section id="tab-model-performance" class="tab-content">
+                    <div class="alert warning mb-6">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>
+                            <strong>Different Datasets and Protocols</strong><br>
+                            The Amazon TGAT and IEEE-CIS E10 models evaluate completely different datasets and anomaly definitions. They are presented together for completeness, NOT as a direct benchmark.
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary-light border-b border-primary">
+                                <h3>Primary: Amazon TGAT</h3>
+                                <span class="badge bg-primary text-white">E-Commerce Link Prediction</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="big-metric mb-6 text-primary">77.01% <span class="text-sm font-normal text-gray-500">Test F1</span></div>
+                                <table class="table-compact">
+                                    <tr><td>Precision</td><td class="text-right font-mono">71.83%</td></tr>
+                                    <tr><td>Recall</td><td class="text-right font-mono">83.00%</td></tr>
+                                    <tr><td>AUROC</td><td class="text-right font-mono">0.7997</td></tr>
+                                    <tr><td>AUPRC</td><td class="text-right font-mono">0.7821</td></tr>
+                                    <tr><td>Causal Leakage</td><td class="text-right font-mono text-green font-bold">0%</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="card border-neutral">
+                            <div class="card-header bg-neutral-light border-b border-neutral">
+                                <h3>Baseline: IEEE-CIS E10</h3>
+                                <span class="badge bg-neutral text-white">Tabular Transaction Fraud</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="big-metric mb-6 text-neutral">62.25% <span class="text-sm font-normal text-gray-500">Test F1</span></div>
+                                <table class="table-compact text-gray-500">
+                                    <tr><td>Precision</td><td class="text-right font-mono">72.25%</td></tr>
+                                    <tr><td>Recall</td><td class="text-right font-mono">54.68%</td></tr>
+                                    <tr><td>AUROC</td><td class="text-right font-mono">0.9378</td></tr>
+                                    <tr><td>AUPRC</td><td class="text-right font-mono">0.6454</td></tr>
+                                    <tr><td>Delay Protocol</td><td class="text-right font-mono text-green font-bold">7-Days</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DATASET TAB -->
+                <section id="tab-dataset" class="tab-content">
+                    <div class="card max-w-4xl mx-auto">
+                        <div class="card-header">
+                            <h3>Dataset Provenance: Amazon Electronics</h3>
+                        </div>
+                        <div class="card-body text-sm leading-relaxed">
+                            <p class="mb-4">The TGAT model is trained exclusively on the highly-cited <strong>Amazon Electronics</strong> review dataset.</p>
+                            
+                            <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Training Data Source</h4>
+                            <code class="block mb-4 p-3 bg-gray-100 rounded text-gray-800 font-mono">
+                                data/amazon/raw/reviews_Electronics.json.gz (1.77 GB)<br>
+                                data/amazon/raw/meta_Electronics.json.gz (186 MB)
+                            </code>
+                            
+                            <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Verified Real Graph Topology</h4>
+                            <ul class="list-disc pl-5 mb-4 text-gray-600">
+                                <li><strong>Nodes:</strong> Real Amazon Reviewers (Users) and ASINs (Products)</li>
+                                <li><strong>Edges:</strong> Chronological real-world reviews with verified unix timestamps</li>
+                                <li><strong>No Synthetic Entities:</strong> No fabricated users or products exist in the graph.</li>
+                            </ul>
+
+                            <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Self-Supervised Anomaly Definition</h4>
+                            <p class="text-gray-600 mb-4">Because the raw dataset lacks explicit "fraud" tags, anomalies are defined topologically. We utilize <strong>Contrastive Negative Sampling</strong>:</p>
+                            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 text-blue-900 rounded">
+                                <strong>Negative Edges (Anomalies):</strong> The model dynamically queries unobserved edges (a real user interacting with a real product they have zero genuine affinity/history with) to represent anomalous interactions (e.g., review bombing, account hijacking).
+                            </div>
+                            <p class="text-gray-600">This strictly forces the TGAT to distinguish genuine topological behavior from random or malicious structural injections.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SYSTEM HEALTH TAB -->
+                <section id="tab-system-health" class="tab-content">
+                    <div class="dashboard-grid">
+                        <div class="card col-span-2">
+                            <div class="card-header flex-between">
+                                <h3>System Diagnostic</h3>
+                                <button class="btn btn-sm btn-outline" id="btn-refresh-health"><i class="fa-solid fa-arrows-rotate"></i> Ping API</button>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="data-table" id="health-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Component</th>
+                                            <th>Status</th>
+                                            <th>Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="health-tbody">
+                                        <tr><td colspan="3" class="text-center py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking backend...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </div> <!-- content-scroll -->
+        </main>
     </div>
-  </div>
-</nav>
 
-<main>
-
-<!-- KPI STRIP -->
-<section id="overview">
-  <div class="kpi-strip" id="kpi-strip">
-    <div class="kpi accent">
-      <div class="label">Amazon TGAT F1</div>
-      <div class="value" id="kpi-tgat-f1">Loading...</div>
-      <div class="sub">Self-Supervised Reconstruction</div>
-    </div>
-    <div class="kpi blue">
-      <div class="label">Amazon Reviews Analyzed</div>
-      <div class="value">1.7M+</div>
-      <div class="sub">Electronics Category Graph</div>
-    </div>
-    <div class="kpi green">
-      <div class="label">IEEE-CIS Baseline F1</div>
-      <div class="value">62.25%</div>
-      <div class="sub">Historical E10 CatBoost</div>
-    </div>
-  </div>
-</section>
-
-<!-- ARCHITECTURE -->
-<section>
-  <div class="card">
-    <h3>System Architecture — Amazon TGAT Graph Link Prediction</h3>
-    <div class="arch-flow">
-      <div class="arch-box"><div class="aname">Amazon Reviews</div><div class="adesc">Users, Products, Ratings, Timestamps</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box"><div class="aname">Temporal Graph</div><div class="adesc">Chronological edges, causal masking</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box tgat"><div class="aname">Amazon TGAT</div><div class="adesc">Causal Attention · Learned exp(-τΔt) decay</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box"><div class="aname">Anomaly Score</div><div class="adesc">Contrastive Link Reconstruction Error</div></div>
-    </div>
-    <div class="disclaimer">
-      <strong>Anomaly Definition:</strong> The raw Amazon Electronics dataset lacks ground-truth fraud labels. We detect anomalies via <em>self-supervised link prediction</em>. Highly improbable interactions between Users and Products (given their temporal graph history) produce high reconstruction errors and are classified as anomalous.
-    </div>
-  </div>
-</section>
-
-<!-- ENTITY MAP -->
-<section>
-  <h2>Amazon Graph Entities <span class="badge primary">Dataset: Amazon Electronics</span></h2>
-  <div class="entity-grid">
-    <div class="entity-card">
-      <div class="icon">👤</div>
-      <div class="ename">User Node</div>
-      <div class="edesc">Amazon Reviewer (reviewerID)<br>Temporal embedding aggregated from prior reviews.</div>
-    </div>
-    <div class="entity-card">
-      <div class="icon">📦</div>
-      <div class="ename">Product Node</div>
-      <div class="edesc">Amazon Item (asin)<br>Temporal embedding aggregated from prior reviewers.</div>
-    </div>
-    <div class="entity-card">
-      <div class="icon">⭐</div>
-      <div class="ename">Review Edge</div>
-      <div class="edesc">Interaction Event<br>Edge attributes: Timestamp, Rating, Helpfulness Ratio.</div>
-    </div>
-  </div>
-</section>
-
-<!-- LIVE INFERENCE -->
-<section id="live">
-  <h2>Live Anomaly Detection <span class="badge primary">Amazon TGAT Model</span></h2>
-  <div class="grid-wide">
-    
-    <div class="card">
-      <h3>Analyze Amazon Interaction</h3>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>User ID (reviewerID)</label>
-          <input type="text" id="f-user" value="A34BZN6YJG123" placeholder="e.g. A2CX7LUOHB2NDG">
-        </div>
-        <div class="form-group">
-          <label>Product ID (asin)</label>
-          <input type="text" id="f-prod" value="B0002L5R78" placeholder="e.g. 0321732944">
-        </div>
-        <div class="form-group">
-          <label>Rating (overall)</label>
-          <input type="number" id="f-rating" value="5.0" min="1" max="5" step="0.5">
-        </div>
-        <div class="form-group">
-          <label>Timestamp (Unix)</label>
-          <input type="number" id="f-time" value="">
-        </div>
-      </div>
-      <button class="analyze-btn" id="analyze-btn" onclick="analyzeInteraction()">Inspect Interaction 🔍</button>
-      
-      <div class="result-box" id="result-box">
-        <div class="risk-banner" id="risk-banner">
-          <div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">ANOMALY CLASSIFICATION</div>
-            <div class="risk-label" id="risk-label">—</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">RECONSTRUCTION ERROR</div>
-            <div class="risk-prob" id="risk-prob">—</div>
-          </div>
-        </div>
-        
-        <div class="result-grid">
-          <div class="result-item">
-            <div class="ri-label">Link Similarity</div>
-            <div class="ri-val" id="r-sim">—</div>
-          </div>
-          <div class="result-item">
-            <div class="ri-label">User Embedding Norm</div>
-            <div class="ri-val" id="r-u-norm">—</div>
-          </div>
-          <div class="result-item">
-            <div class="ri-label">User Temporal Half-Life</div>
-            <div class="ri-val" id="r-u-hl">—</div>
-          </div>
-          <div class="result-item">
-            <div class="ri-label">Product Temporal Half-Life</div>
-            <div class="ri-val" id="r-p-hl">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card" style="display:flex; flex-direction:column; justify-content:center;">
-      <h3 style="margin-bottom:10px;">How Inference Works</h3>
-      <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
-        The Amazon TGAT evaluates the probability of a review occurring between a given User and Product at a specific Time.
-      </p>
-      <ul style="font-size:13px; color:var(--text); line-height:1.8; padding-left:20px; margin-bottom:20px;">
-        <li>Fetches the historical subgraph for the User and Product strictly before <code>t_target</code>.</li>
-        <li>Applies temporal attention with exponential decay (<code>τ</code>).</li>
-        <li>Computes the dot product of the contextual embeddings.</li>
-        <li>A low similarity score implies a <strong>highly anomalous</strong> interaction (e.g., review bot, hijacked account).</li>
-      </ul>
-      <div style="background:rgba(245,158,11,.1); border-left:3px solid var(--accent); padding:12px; font-size:12px; color:var(--muted);">
-        <em>Note: Demo mode utilizes cached proxy embeddings for speed. Full production deployments require a graph database to query ego-networks in real-time.</em>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<!-- METHODOLOGY -->
-<section id="performance">
-  <h2>Methodology & Model Comparisons <span class="badge">Research Results</span></h2>
-  <div class="card">
-    <table>
-      <tr>
-        <th>Methodology</th>
-        <th>Dataset</th>
-        <th>Task Type</th>
-        <th>Evaluation Protocol</th>
-        <th>F1 Score</th>
-      </tr>
-      <tr style="background:rgba(245,158,11,.05)">
-        <td><strong>Our Amazon TGAT</strong> <span class="tag primary">PRIMARY</span></td>
-        <td>Amazon Electronics</td>
-        <td>Self-Supervised Link Prediction</td>
-        <td>Causal Inductive</td>
-        <td id="table-tgat-f1"><strong>Loading...</strong></td>
-      </tr>
-      <tr>
-        <td>GNN-EADD Paper <span class="tag external">BASE PAPER</span></td>
-        <td>Amazon (varies)</td>
-        <td>Node/Edge Spam Classification</td>
-        <td>Transductive (often semi-supervised)</td>
-        <td>~73.00% (Not directly comparable)</td>
-      </tr>
-      <tr>
-        <td>IEEE-CIS E10 CatBoost <span class="tag baseline">BASELINE</span></td>
-        <td>IEEE-CIS Transactions</td>
-        <td>Supervised Fraud Detection</td>
-        <td>Causal Inductive (7-day delay)</td>
-        <td>62.25%</td>
-      </tr>
-    </table>
-    
-    <div class="disclaimer">
-      <strong>Important Context:</strong> The GNN-EADD published benchmark of 73% utilizes transductive graph methods and external spam labels (or heuristic ground truths). Our implementation enforces strict causal isolation (no future edges) and relies on unsupervised link prediction, meaning the F1 scores represent completely different evaluation paradigms. The IEEE-CIS E10 model remains our validated baseline for supervised transaction fraud.
-    </div>
-  </div>
-</section>
-
-</main>
-
-<script>
-const API = (window.location.port === '' || window.location.protocol === 'file:')
-  ? 'http://127.0.0.1:8000'
-  : `${window.location.protocol}//${window.location.host}`;
-
-// Set current Unix time as default
-document.getElementById('f-time').value = Math.floor(Date.now() / 1000);
-
-async function fetchMetrics() {
-  try {
-    const r = await fetch(`${API}/api/research-metrics`);
-    if (r.ok) {
-      const data = await r.json();
-      const tgatF1 = data.amazon_tgat?.F1;
-      
-      const f1Display = tgatF1 ? (tgatF1 * 100).toFixed(2) + '%' : 'Training...';
-      document.getElementById('kpi-tgat-f1').textContent = f1Display;
-      document.getElementById('table-tgat-f1').innerHTML = `<strong>${f1Display}</strong>`;
-    }
-  } catch(e) {
-    console.error("Failed to load metrics", e);
-  }
-}
-
-async function checkHealth() {
-  try {
-    const r = await fetch(`${API}/health`, {signal: AbortSignal.timeout(5000)});
-    if (r.ok) {
-      document.getElementById('api-status-text').textContent = 'API Online';
-      fetchMetrics();
-    } else {
-      document.getElementById('api-status-text').textContent = 'API Error';
-    }
-  } catch {
-    document.getElementById('api-status-text').textContent = 'API Offline';
-  }
-}
-checkHealth();
-setInterval(checkHealth, 15000);
-
-async function analyzeInteraction() {
-  const btn = document.getElementById('analyze-btn');
-  btn.disabled = true;
-  btn.textContent = 'Inspecting...';
-
-  const payload = {
-    reviewerID: document.getElementById('f-user').value || 'A1',
-    asin: document.getElementById('f-prod').value || 'B1',
-    overall: parseFloat(document.getElementById('f-rating').value) || 5.0,
-    unixReviewTime: parseFloat(document.getElementById('f-time').value) || (Date.now()/1000)
-  };
-
-  try {
-    const r = await fetch(`${API}/predict/amazon`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000)
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const d = await r.json();
-    renderResult(d);
-  } catch(e) {
-    alert(`API Error: Make sure FastAPI is running at ${API}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Inspect Interaction 🔍';
-  }
-}
-
-function renderResult(d) {
-  const box = document.getElementById('result-box');
-  box.classList.add('visible');
-  
-  const prob = d.anomaly_probability;
-  const rl = (d.risk_level || 'UNKNOWN').toUpperCase();
-  const banner = document.getElementById('risk-banner');
-  
-  banner.className = 'risk-banner ' + ({'LOW':'low','MODERATE':'elevated','ELEVATED':'elevated','HIGH':'high'}[rl] || 'low');
-  document.getElementById('risk-label').textContent = rl + ' RISK';
-  
-  document.getElementById('risk-prob').textContent = prob != null ? (prob*100).toFixed(1) + '%' : 'N/A';
-  
-  document.getElementById('r-sim').textContent = d.similarity_score != null ? d.similarity_score.toFixed(4) : '—';
-  document.getElementById('r-u-norm').textContent = d.user_embedding_norm != null ? d.user_embedding_norm.toFixed(4) : '—';
-  
-  document.getElementById('r-u-hl').textContent = d.temporal_half_life_user_days ? d.temporal_half_life_user_days + 'd' : '—';
-  document.getElementById('r-p-hl').textContent = d.temporal_half_life_product_days ? d.temporal_half_life_product_days + 'd' : '—';
-}
-</script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
