@@ -1,0 +1,168 @@
+{
+  "_meta": {
+    "project": "IEEE-CIS E-Commerce Anomaly Detection",
+    "authoritative_result": "E10 Static Causal CatBoost Ensemble",
+    "frozen": true,
+    "protocol": "Chronological inductive split, 7-day label availability boundary",
+    "dataset": "IEEE-CIS Fraud Detection (Kaggle)"
+  },
+  "e10": {
+    "label": "E10 Static Ensemble",
+    "type": "TEST",
+    "test_f1": 0.6225,
+    "test_precision": 0.7225,
+    "test_recall": 0.5469,
+    "test_auroc": 0.9378,
+    "test_auprc": 0.6455,
+    "test_fpr": 0.0076,
+    "threshold": 0.4040,
+    "tp": 1703,
+    "tn": 85558,
+    "fp": 654,
+    "fn": 1411,
+    "total_test": 89326,
+    "total_fraud": 3114,
+    "features": 508,
+    "models": 3,
+    "base_depth": 6,
+    "deep_depth": 8,
+    "selected": true,
+    "source": "reports/final_e10_test_results.json"
+  },
+  "e12": {
+    "label": "E12 Continual Test",
+    "type": "TEST",
+    "test_f1": 0.6118,
+    "test_precision": 0.7017,
+    "test_recall": 0.5424,
+    "test_auroc": 0.9314,
+    "test_auprc": 0.6336,
+    "test_fpr": 0.0083,
+    "threshold": 0.2316,
+    "tp": 1689,
+    "tn": 85494,
+    "fp": 718,
+    "fn": 1425,
+    "selected": false,
+    "reason": "Below E10 by 1.07pp",
+    "source": "reports/final_e11_test_results.json"
+  },
+  "e6": {
+    "label": "E6 Causal Baseline",
+    "type": "TEST",
+    "test_f1": 0.5648,
+    "test_precision": 0.6702,
+    "test_recall": 0.4881,
+    "test_auroc": 0.9236,
+    "test_auprc": 0.5688,
+    "test_fpr": 0.0087,
+    "tp": 1520,
+    "tn": 85464,
+    "fp": 748,
+    "fn": 1594,
+    "source": "reports/final_e6_test_results.json"
+  },
+  "xgboost_baseline": {
+    "label": "Clean XGBoost Baseline",
+    "type": "TEST",
+    "test_f1": 0.4969,
+    "test_precision": 0.6237,
+    "test_recall": 0.4130,
+    "test_auroc": 0.8932,
+    "test_auprc": 0.4954,
+    "test_fpr": 0.0090,
+    "tp": 1286,
+    "tn": 85436,
+    "fp": 776,
+    "fn": 1828,
+    "source": "reports/final_test_results.json"
+  },
+  "tgat_hybrid": {
+    "label": "Hybrid T-GAT",
+    "type": "TEST",
+    "test_f1": 0.4999,
+    "test_precision": 0.5675,
+    "test_recall": 0.4467,
+    "test_auroc": 0.8903,
+    "test_auprc": 0.5002,
+    "test_fpr": 0.0123,
+    "note": "TGAT research direction investigated; tabular CatBoost outperformed",
+    "source": "reports/final_test_results.json"
+  },
+  "gnn_eadd_external": {
+    "label": "GNN-EADD (External Benchmark)",
+    "type": "EXTERNAL",
+    "test_f1": 0.7300,
+    "comparability": false,
+    "note": "Published external benchmark. Different dataset (Amazon review graph), transductive node classification protocol. NOT directly comparable to inductive transaction stream evaluation.",
+    "source": "Published: Shao et al., GNN-EADD"
+  },
+  "e11_validation": {
+    "label": "E11 Continual Learning Validation",
+    "type": "VALIDATION",
+    "strategies": {
+      "static_baseline": { "label": "Static Baseline", "val_f1": 0.5646 },
+      "continual_ensemble": { "label": "Continual Ensemble", "val_f1": 0.5931 },
+      "rolling_30d": { "label": "Rolling 30-Day", "val_f1": 0.5988 },
+      "recency_weighted": { "label": "Recency Weighted", "val_f1": 0.5994 },
+      "periodic_retraining": { "label": "Periodic 7-Day Retraining (E11-B)", "val_f1": 0.6032 }
+    },
+    "best_strategy": "periodic_retraining",
+    "improvement_over_static": 3.86,
+    "gate_decision": "PASS",
+    "source": "reports/e11_final_recommendation.md"
+  },
+  "e14_validation": {
+    "label": "E14 Adaptive Continual Learning",
+    "type": "VALIDATION",
+    "best_single_seed": 0.6188,
+    "robustness_mean": 0.6124,
+    "robustness_std": 0.0065,
+    "mean_improvement_pp": 0.92,
+    "required_improvement_pp": 1.5,
+    "gate_decision": "FAIL",
+    "reason": "Mean improvement +0.92pp < required +1.5pp gate to unfreeze Test set",
+    "seeds": [42, 123, 999],
+    "seed_improvements": [1.56, 0.26, 0.94],
+    "best_config": "Exponential recency weighting (lambda=0.03, ~23-day half-life)",
+    "source": "reports/e14_final_recommendation.md"
+  },
+  "e13_ablation": {
+    "label": "E13 Information Availability Ablation",
+    "type": "ABLATION",
+    "note": "Validation F1 under varying label delay constraints",
+    "delays": [
+      { "delta_days": 7, "val_f1": 0.5978, "deployable": true, "label": "Δ=7 days (causal)" },
+      { "delta_days": 1, "val_f1": 0.6511, "deployable": false, "label": "Δ=1 day (near-real-time)" },
+      { "delta_days": 0, "val_f1": 0.7498, "deployable": false, "label": "Δ=0 days (instantaneous — not realistic)" }
+    ],
+    "finding": "Reducing label delay from 7 to 0 days inflates Validation F1 by 15.2pp. This demonstrates the information availability effect and explains the gap with external benchmarks.",
+    "source": "reports/e13_final_recommendation.md"
+  },
+  "experiment_timeline": [
+    { "phase": "E1", "name": "Full Feature XGBoost", "result": "49.69% Test F1", "decision": "Baseline established", "type": "TEST" },
+    { "phase": "E2-B", "name": "0-Day CatBoost", "result": "69.22% Test F1", "decision": "INVALIDATED — 0-day label leakage", "type": "INVALID" },
+    { "phase": "E3", "name": "Hybrid T-GAT", "result": "49.99% Test F1", "decision": "Negligible GNN lift over tabular baseline", "type": "TEST" },
+    { "phase": "E6", "name": "7-Day Delayed CatBoost", "result": "56.48% Test F1", "decision": "First valid causal result", "type": "TEST" },
+    { "phase": "E10", "name": "Causal Ensemble (3×CatBoost)", "result": "62.25% Test F1", "decision": "SELECTED — Authoritative final result", "type": "TEST" },
+    { "phase": "E11", "name": "Continual Learning", "result": "60.32% Val F1 (best strategy)", "decision": "Validation gate passed; authorized Test eval", "type": "VALIDATION" },
+    { "phase": "E12", "name": "Continual Learning Test", "result": "61.18% Test F1", "decision": "Below E10; E10 remains selected", "type": "TEST" },
+    { "phase": "E13", "name": "Information Availability Ablation", "result": "Δ=0: 74.98% → Δ=7: 59.78%", "decision": "Key research finding — delay explains benchmark gap", "type": "ABLATION" },
+    { "phase": "E14", "name": "Adaptive Continual Learning", "result": "+0.92pp mean improvement (robustness)", "decision": "Gate FAILED (<1.5pp). E10 frozen.", "type": "VALIDATION" }
+  ],
+  "entities": {
+    "transaction": { "description": "Individual e-commerce purchase event", "key_fields": ["TransactionID", "TransactionDT", "TransactionAmt", "ProductCD"] },
+    "card_identity": { "description": "Composite card identity (card1+card2)", "key_fields": ["card1", "card2", "card3", "card4", "card5", "card6"] },
+    "email_domain": { "description": "Purchaser and recipient email domains", "key_fields": ["P_emaildomain", "R_emaildomain"] },
+    "device": { "description": "Composite device identity (DeviceInfo+id_31)", "key_fields": ["DeviceInfo", "DeviceType", "id_31"] },
+    "address": { "description": "Billing/shipping address codes", "key_fields": ["addr1", "addr2"] }
+  },
+  "feature_groups": {
+    "transaction_raw": { "count": 340, "description": "V1–V339 anonymized signals, TransactionAmt" },
+    "c_features": { "count": 14, "description": "C1–C14 anonymized counting signals" },
+    "d_features": { "count": 15, "description": "D1–D15 time-delta features" },
+    "categorical": { "count": 42, "description": "ProductCD, card1–6, addr1–2, email domains, device, M1–9, id_12–38" },
+    "behavioral_causal": { "count": 90, "description": "Numba-computed delayed behavioral aggregations per entity (card1, card1+addr1, card1+device)" },
+    "missing_flags": { "count": 7, "description": "Missingness indicators for key fields" }
+  }
+}
