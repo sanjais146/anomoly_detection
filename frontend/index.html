@@ -3,150 +3,95 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>E-Commerce Anomaly Detection — Research Command Center</title>
+<title>Amazon E-Commerce Anomaly Detection — Command Center</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0a0d14; --surface: #111827; --surface2: #1a2233; --surface3: #1e2d45;
-    --border: #1f2d44; --accent: #3b82f6; --accent2: #8b5cf6; --accent3: #10b981;
-    --danger: #ef4444; --warn: #f59e0b; --text: #f1f5f9; --muted: #64748b;
+    --bg: #0f111a; --surface: #1a1d27; --surface2: #232736; --surface3: #2d3345;
+    --border: #2e3447; --accent: #f59e0b; /* Amazon Orange */ --accent2: #3b82f6; --accent3: #10b981;
+    --danger: #ef4444; --warn: #f59e0b; --text: #f8fafc; --muted: #94a3b8;
     --card-h: 1px solid var(--border);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;}
   a{color:var(--accent);text-decoration:none;}
   /* Nav */
-  nav{background:var(--surface);border-bottom:var(--card-h);padding:0 24px;display:flex;align-items:center;height:52px;position:sticky;top:0;z-index:100;gap:32px;}
-  .nav-brand{font-weight:700;font-size:15px;color:var(--text);display:flex;align-items:center;gap:8px;}
-  .nav-brand .dot{width:8px;height:8px;background:var(--accent3);border-radius:50%;animation:pulse 2s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  nav{background:var(--surface);border-bottom:var(--card-h);padding:0 24px;display:flex;align-items:center;height:60px;position:sticky;top:0;z-index:100;gap:32px;}
+  .nav-brand{font-weight:700;font-size:16px;color:var(--text);display:flex;align-items:center;gap:10px;}
+  .nav-brand .dot{width:10px;height:10px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
   .nav-links{display:flex;gap:4px;}
-  .nav-links a{padding:6px 12px;border-radius:6px;font-size:13px;color:var(--muted);transition:all .2s;}
+  .nav-links a{padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;}
   .nav-links a:hover,.nav-links a.active{background:var(--surface2);color:var(--text);}
   .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-  .status-pill{display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--accent3);}
+  .status-pill{display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--accent3);}
   .status-pill .dot2{width:6px;height:6px;background:var(--accent3);border-radius:50%;animation:pulse 2s infinite;}
   /* Layout */
-  main{padding:20px 24px;max-width:1600px;margin:0 auto;}
-  section{margin-bottom:32px;}
-  h2{font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-  h2 .badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px;background:var(--surface2);color:var(--muted);}
+  main{padding:24px;max-width:1400px;margin:0 auto;}
+  section{margin-bottom:40px;}
+  h2{font-size:18px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+  h2 .badge{font-size:12px;font-weight:500;padding:3px 10px;border-radius:6px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+  h2 .badge.primary{background:rgba(245,158,11,.15);color:var(--accent);border-color:rgba(245,158,11,.3);}
   /* KPI Strip */
-  .kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;}
-  .kpi{background:var(--surface);border:var(--card-h);border-radius:10px;padding:14px 16px;}
-  .kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
-  .kpi .value{font-size:22px;font-weight:700;}
-  .kpi .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+  .kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;}
+  .kpi{background:var(--surface);border:var(--card-h);border-radius:12px;padding:16px 20px;}
+  .kpi .label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  .kpi .value{font-size:28px;font-weight:800;letter-spacing:-.02em;}
+  .kpi .sub{font-size:12px;color:var(--muted);margin-top:4px;}
   .kpi.accent .value{color:var(--accent);}
+  .kpi.blue .value{color:var(--accent2);}
   .kpi.green .value{color:var(--accent3);}
-  .kpi.purple .value{color:var(--accent2);}
-  .kpi.warn .value{color:var(--warn);}
-  /* Grid layouts */
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
-  .grid-wide{display:grid;grid-template-columns:2fr 1fr;gap:16px;}
+  /* Grids */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .grid-wide{display:grid;grid-template-columns:3fr 2fr;gap:20px;}
   /* Card */
-  .card{background:var(--surface);border:var(--card-h);border-radius:10px;padding:18px;}
-  .card h3{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;}
-  /* Chart container */
-  .chart-wrap{position:relative;height:220px;}
-  .chart-wrap.tall{height:280px;}
-  /* Model cards */
-  .model-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .model-card{background:var(--surface2);border:var(--card-h);border-radius:8px;padding:12px;}
-  .model-card .mname{font-size:13px;font-weight:600;margin-bottom:4px;}
-  .model-card .mdetail{font-size:11px;color:var(--muted);}
-  .model-card.tgat-card{border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.06);}
-  .model-card.e10-card{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.06);}
-  /* Confusion matrix */
-  .cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
-  .cm-cell{border-radius:8px;padding:14px;text-align:center;}
-  .cm-cell .val{font-size:20px;font-weight:700;}
-  .cm-cell .lbl{font-size:10px;color:var(--muted);margin-top:2px;}
-  .cm-tp{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);}
-  .cm-tn{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);}
-  .cm-fp{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);}
-  .cm-fn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);}
-  /* Tables */
-  table{width:100%;border-collapse:collapse;font-size:12px;}
-  th{text-align:left;padding:8px 10px;color:var(--muted);font-weight:500;border-bottom:var(--card-h);font-size:11px;text-transform:uppercase;}
-  td{padding:8px 10px;border-bottom:1px solid rgba(31,45,68,.5);}
-  tr:last-child td{border-bottom:none;}
-  .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;}
-  .tag.test{background:rgba(59,130,246,.15);color:var(--accent);}
-  .tag.val{background:rgba(139,92,246,.15);color:var(--accent2);}
-  .tag.invalid{background:rgba(239,68,68,.15);color:var(--danger);}
-  .tag.external{background:rgba(100,116,139,.15);color:var(--muted);}
-  .tag.selected{background:rgba(16,185,129,.15);color:var(--accent3);}
-  /* Live inference panel */
-  .live-panel{background:var(--surface);border:var(--card-h);border-radius:10px;padding:20px;}
-  .live-panel h3{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .form-group label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:5px;}
-  .form-group input,.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;outline:none;}
-  .form-group input:focus,.form-group select:focus{border-color:var(--accent);}
-  .form-group select option{background:var(--surface2);}
-  .analyze-btn{margin-top:14px;width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;}
-  .analyze-btn:hover{opacity:.85;}
-  .analyze-btn:disabled{opacity:.4;cursor:default;}
-  /* Result panel */
-  .result-box{margin-top:16px;background:var(--surface2);border-radius:10px;padding:16px;display:none;}
-  .result-box.visible{display:block;}
-  .risk-banner{border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
-  .risk-banner.low{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);}
-  .risk-banner.moderate{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);}
-  .risk-banner.elevated{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);}
-  .risk-banner.high{background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.5);}
-  .risk-label{font-size:18px;font-weight:700;}
-  .risk-prob{font-size:28px;font-weight:800;}
-  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-  .result-item{background:var(--surface);border-radius:6px;padding:10px;}
-  .result-item .ri-label{font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
-  .result-item .ri-val{font-size:14px;font-weight:600;}
-  .tgat-block{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:8px;padding:12px;}
-  .tgat-block h4{font-size:12px;font-weight:600;color:var(--accent2);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-  .tgat-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid rgba(139,92,246,.1);}
-  .tgat-row:last-child{border-bottom:none;}
-  .signals-list{font-size:12px;color:var(--muted);}
-  .signals-list li{padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px;}
-  .signals-list li::before{content:'›';color:var(--accent);}
-  /* Timeline */
-  .timeline{display:flex;flex-direction:column;gap:0;}
-  .tl-item{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);}
-  .tl-item:last-child{border-bottom:none;}
-  .tl-phase{min-width:36px;font-size:11px;font-weight:700;color:var(--accent);background:rgba(59,130,246,.1);border-radius:5px;padding:3px 6px;text-align:center;align-self:flex-start;}
-  .tl-content .tl-name{font-size:13px;font-weight:600;margin-bottom:2px;}
-  .tl-content .tl-result{font-size:11px;color:var(--muted);}
-  .tl-content .tl-decision{font-size:11px;margin-top:2px;}
-  /* Ablation annotations */
-  .ablation-note{font-size:11px;color:var(--muted);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:8px 10px;margin-top:10px;}
-  /* Entity map */
-  .entity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;}
-  .entity-card{background:var(--surface2);border:var(--card-h);border-radius:8px;padding:12px;text-align:center;}
-  .entity-card .icon{font-size:24px;margin-bottom:6px;}
-  .entity-card .ename{font-size:12px;font-weight:600;margin-bottom:3px;}
-  .entity-card .efields{font-size:10px;color:var(--muted);line-height:1.6;}
-  /* System status */
-  .sys-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
-  .sys-item{background:var(--surface2);border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;}
-  .sys-item .sys-icon{font-size:18px;}
-  .sys-item .sys-label{font-size:11px;color:var(--muted);}
-  .sys-item .sys-val{font-size:12px;font-weight:600;}
-  .sys-check{color:var(--accent3);}
+  .card{background:var(--surface);border:var(--card-h);border-radius:12px;padding:20px;}
+  .card h3{font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;}
   /* Architecture viz */
   .arch-flow{display:flex;align-items:stretch;gap:0;}
-  .arch-box{background:var(--surface2);border:var(--card-h);border-radius:8px;padding:10px 14px;text-align:center;flex:1;}
-  .arch-box .aname{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
-  .arch-box .adesc{font-size:10px;color:var(--muted);}
-  .arch-arrow{display:flex;align-items:center;padding:0 4px;color:var(--muted);}
-  .arch-box.tgat{border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.08);}
-  .arch-box.e10{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.08);}
-  .arch-box.output{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.08);}
-  /* Responsive */
-  @media(max-width:900px){.grid2,.grid3,.grid-wide{grid-template-columns:1fr;}.kpi-strip{grid-template-columns:repeat(4,1fr);}.arch-flow{flex-direction:column;}.arch-arrow{justify-content:center;transform:rotate(90deg);}nav .nav-links{display:none;}}
-  @media(max-width:600px){.kpi-strip{grid-template-columns:repeat(2,1fr);}.form-grid{grid-template-columns:1fr;}.model-cards{grid-template-columns:1fr;}}
-  .disclaimer{font-size:11px;color:var(--muted);background:rgba(100,116,139,.06);border:1px solid rgba(100,116,139,.15);border-radius:6px;padding:8px 12px;margin-top:12px;}
-  .highlight-num{color:var(--accent3);font-weight:700;}
+  .arch-box{background:var(--surface2);border:var(--card-h);border-radius:8px;padding:12px;text-align:center;flex:1;}
+  .arch-box .aname{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;}
+  .arch-box .adesc{font-size:11px;color:var(--muted);}
+  .arch-arrow{display:flex;align-items:center;padding:0 8px;color:var(--muted);font-weight:bold;}
+  .arch-box.tgat{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.1);}
+  /* Live inference panel */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .form-group label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:6px;}
+  .form-group input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none;}
+  .form-group input:focus{border-color:var(--accent);}
+  .analyze-btn{margin-top:20px;width:100%;padding:14px;background:var(--accent);color:#000;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(245,158,11,.3);}
+  .analyze-btn:hover{background:#fcd34d;transform:translateY(-1px);}
+  .analyze-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  /* Result panel */
+  .result-box{margin-top:24px;background:var(--surface2);border-radius:12px;padding:20px;border:1px solid var(--border);display:none;}
+  .result-box.visible{display:block;}
+  .risk-banner{border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface3);}
+  .risk-banner.low{border-left:4px solid var(--accent3);}
+  .risk-banner.elevated{border-left:4px solid var(--warn);}
+  .risk-banner.high{border-left:4px solid var(--danger);}
+  .risk-label{font-size:22px;font-weight:800;letter-spacing:-.01em;}
+  .risk-prob{font-size:32px;font-weight:900;}
+  .result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
+  .result-item{background:rgba(0,0,0,.2);border-radius:8px;padding:12px;}
+  .result-item .ri-label{font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;font-weight:600;}
+  .result-item .ri-val{font-size:15px;font-weight:600;color:var(--text);}
+  /* Disclaimer */
+  .disclaimer{font-size:12px;color:var(--muted);background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.2);border-radius:8px;padding:12px 16px;margin-top:16px;}
+  /* Entity Map */
+  .entity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .entity-card{background:var(--surface2);border:var(--card-h);border-radius:12px;padding:20px;text-align:center;}
+  .entity-card .icon{font-size:32px;margin-bottom:12px;}
+  .entity-card .ename{font-size:15px;font-weight:700;margin-bottom:4px;color:var(--text);}
+  .entity-card .edesc{font-size:12px;color:var(--muted);}
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;padding:12px;color:var(--muted);font-weight:600;border-bottom:var(--card-h);font-size:12px;text-transform:uppercase;}
+  td{padding:12px;border-bottom:1px solid var(--border);}
+  tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;}
+  .tag.primary{background:rgba(245,158,11,.15);color:var(--accent);}
+  .tag.baseline{background:rgba(59,130,246,.15);color:var(--accent2);}
+  .tag.external{background:rgba(148,163,184,.15);color:var(--muted);}
 </style>
 </head>
 <body>
@@ -154,15 +99,12 @@
 <nav>
   <div class="nav-brand">
     <div class="dot"></div>
-    E-Commerce Anomaly Detection
+    Amazon E-Commerce Anomaly Detection
   </div>
   <div class="nav-links">
     <a href="#overview" class="active">Overview</a>
-    <a href="#live">Live Detection</a>
-    <a href="#performance">Performance</a>
-    <a href="#causal">Causal Analysis</a>
-    <a href="#experiments">Experiments</a>
-    <a href="#system">System</a>
+    <a href="#live">Live TGAT Inference</a>
+    <a href="#performance">Methodology & Performance</a>
   </div>
   <div class="nav-right">
     <div class="status-pill">
@@ -174,233 +116,184 @@
 
 <main>
 
-<!-- ═══════════════ KPI STRIP ═══════════════ -->
-<section id="overview" style="padding-top:8px;">
+<!-- KPI STRIP -->
+<section id="overview">
   <div class="kpi-strip" id="kpi-strip">
-    <div class="kpi accent"><div class="label">Test F1</div><div class="value">62.25%</div><div class="sub">E10 Authoritative</div></div>
-    <div class="kpi green"><div class="label">Precision</div><div class="value">72.25%</div><div class="sub">E10 Test</div></div>
-    <div class="kpi purple"><div class="label">Recall</div><div class="value">54.68%</div><div class="sub">E10 Test</div></div>
-    <div class="kpi accent"><div class="label">AUROC</div><div class="value">0.9378</div><div class="sub">E10 Test</div></div>
-    <div class="kpi green"><div class="label">AUPRC</div><div class="value">0.6455</div><div class="sub">E10 Test</div></div>
-    <div class="kpi warn"><div class="label">FPR</div><div class="value">0.76%</div><div class="sub">E10 Test</div></div>
-    <div class="kpi"><div class="label">Baseline F1</div><div class="value" style="color:var(--muted)">49.69%</div><div class="sub">Clean XGBoost</div></div>
-    <div class="kpi green"><div class="label">Improvement</div><div class="value">+12.56pp</div><div class="sub">vs Baseline</div></div>
+    <div class="kpi accent">
+      <div class="label">Amazon TGAT F1</div>
+      <div class="value" id="kpi-tgat-f1">Loading...</div>
+      <div class="sub">Self-Supervised Reconstruction</div>
+    </div>
+    <div class="kpi blue">
+      <div class="label">Amazon Reviews Analyzed</div>
+      <div class="value">1.7M+</div>
+      <div class="sub">Electronics Category Graph</div>
+    </div>
+    <div class="kpi green">
+      <div class="label">IEEE-CIS Baseline F1</div>
+      <div class="value">62.25%</div>
+      <div class="sub">Historical E10 CatBoost</div>
+    </div>
   </div>
 </section>
 
-<!-- ═══════════════ SYSTEM HERO ═══════════════ -->
+<!-- ARCHITECTURE -->
 <section>
-  <div class="card" style="margin-bottom:16px;">
-    <h3>Architecture — TGAT + E10 CatBoost Ensemble</h3>
-    <div class="arch-flow">
-      <div class="arch-box"><div class="aname">IEEE-CIS Data</div><div class="adesc">E-commerce transactions, card entities, devices, email domains</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box"><div class="aname">Temporal Graph</div><div class="adesc">Card→Tx edges, causal masking t_hist &lt; t_target</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box tgat"><div class="aname">TGAT</div><div class="adesc">Temporal attention · exp(-τΔt) decay · card context embedding</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box e10"><div class="aname">E10 Ensemble</div><div class="adesc">3× CatBoost · 508-dim · 7-day causal features</div></div>
-      <div class="arch-arrow">→</div>
-      <div class="arch-box output"><div class="aname">Anomaly Score</div><div class="adesc">Threshold 0.4040 · Fraud / Legitimate</div></div>
-    </div>
-  </div>
-  <div class="model-cards">
-    <div class="model-card tgat-card">
-      <div class="mname" style="color:var(--accent2)">🕸 TGAT</div>
-      <div class="mdetail">Temporal Graph Attention Network<br>31-dim → 32-dim hidden<br>CausalTemporalAttention · τ=0.431<br>Half-life ≈ 1.6 days<br>Standalone Val F1: 20.12%<br><em>Temporal graph representation component</em></div>
-    </div>
-    <div class="model-card e10-card">
-      <div class="mname" style="color:var(--accent)">⚡ E10 Base</div>
-      <div class="mdetail">CatBoost · depth=6<br>lr=0.10 · 600 iterations<br>508 features · seed=42<br><span class="highlight-num">Authoritative classifier</span></div>
-    </div>
-    <div class="model-card e10-card">
-      <div class="mname" style="color:var(--accent)">⚡ E10 Deep</div>
-      <div class="mdetail">CatBoost · depth=8<br>lr=0.08 · l2_leaf_reg=5<br>600 iterations · seed=42<br><span class="highlight-num">Higher capacity variant</span></div>
-    </div>
-    <div class="model-card e10-card">
-      <div class="mname" style="color:var(--accent)">⚡ E10 Weighted</div>
-      <div class="mdetail">CatBoost · depth=6<br>scale_pos_weight · lr=0.10<br>600 iterations<br><span class="highlight-num">Class-imbalance variant</span></div>
-    </div>
-    <div class="model-card">
-      <div class="mname">📅 Causal Protocol</div>
-      <div class="mdetail">7-day label delay<br>Train: Day 0–120<br>Val: Day 120–150<br>Test: Day 150+ (frozen)<br>t_label ≤ t - Δ enforced</div>
-    </div>
-    <div class="model-card">
-      <div class="mname">🔍 Feature Space</div>
-      <div class="mdetail">508 total dimensions<br>V1–V339 anonymized<br>C1–C14 counting signals<br>D1–D15 time-deltas<br>Behavioral causal aggregations</div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════ E-COMMERCE ENTITY MAP ═══════════════ -->
-<section>
-  <h2>E-Commerce Ecosystem Entities <span class="badge">IEEE-CIS Dataset</span></h2>
-  <div class="entity-grid">
-    <div class="entity-card"><div class="icon">💳</div><div class="ename">Card Identity</div><div class="efields">card1+card2+card3<br>card4, card5, card6<br>(composite entity)</div></div>
-    <div class="entity-card"><div class="icon">🛒</div><div class="ename">Transaction</div><div class="efields">TransactionID<br>TransactionDT<br>TransactionAmt</div></div>
-    <div class="entity-card"><div class="icon">📦</div><div class="ename">Product</div><div class="efields">ProductCD<br>(W/H/C/S/R)<br>purchase category</div></div>
-    <div class="entity-card"><div class="icon">📧</div><div class="ename">Email Domain</div><div class="efields">P_emaildomain<br>R_emaildomain<br>purchaser/recipient</div></div>
-    <div class="entity-card"><div class="icon">💻</div><div class="ename">Device</div><div class="efields">DeviceInfo<br>DeviceType<br>id_31 (browser)</div></div>
-    <div class="entity-card"><div class="icon">📍</div><div class="ename">Address</div><div class="efields">addr1 (billing zip)<br>addr2 (country)<br>dist1, dist2</div></div>
-  </div>
-</section>
-
-<!-- ═══════════════ LIVE DETECTION ═══════════════ -->
-<section id="live">
-  <h2>Live Anomaly Detection <span class="badge">TGAT + E10 Inference</span></h2>
-  <div class="live-panel">
-    <h3>🔎 Analyze E-Commerce Activity</h3>
-    <div class="form-grid">
-      <div class="form-group"><label>Transaction Amount (USD)</label><input type="number" id="f-amt" value="299.99" step="0.01"/></div>
-      <div class="form-group"><label>Product Category</label>
-        <select id="f-product">
-          <option value="W">W — Wholesale</option>
-          <option value="H">H — Home</option>
-          <option value="C">C — Consumer</option>
-          <option value="S">S — Services</option>
-          <option value="R">R — Retail</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Card ID (card1)</label><input type="number" id="f-card1" value="10409"/></div>
-      <div class="form-group"><label>Card Type (card4)</label>
-        <select id="f-card4">
-          <option value="visa">visa</option>
-          <option value="mastercard">mastercard</option>
-          <option value="american express">american express</option>
-          <option value="discover">discover</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Purchaser Email Domain</label><input type="text" id="f-pemail" value="gmail.com"/></div>
-      <div class="form-group"><label>Recipient Email Domain</label><input type="text" id="f-remail" value=""/></div>
-      <div class="form-group"><label>Address Code (addr1)</label><input type="number" id="f-addr1" value="315"/></div>
-      <div class="form-group"><label>Device Info</label><input type="text" id="f-device" value="Windows"/></div>
-    </div>
-    <button class="analyze-btn" id="analyze-btn" onclick="analyzeTransaction()">⚡ Analyze Transaction</button>
-
-    <div class="result-box" id="result-box">
-      <div class="risk-banner" id="risk-banner">
-        <div><div style="font-size:11px;color:var(--muted);margin-bottom:2px;">ANOMALY CLASSIFICATION</div><div class="risk-label" id="risk-label">—</div></div>
-        <div style="text-align:right"><div style="font-size:11px;color:var(--muted);margin-bottom:2px;">E10 PROBABILITY</div><div class="risk-prob" id="risk-prob">—</div></div>
-      </div>
-      <div class="result-grid">
-        <div class="result-item"><div class="ri-label">Prediction</div><div class="ri-val" id="r-prediction">—</div></div>
-        <div class="result-item"><div class="ri-label">Decision Threshold</div><div class="ri-val">0.4040 (E10)</div></div>
-        <div class="result-item"><div class="ri-label">Primary Model</div><div class="ri-val">E10 Static CatBoost Ensemble</div></div>
-        <div class="result-item"><div class="ri-label">Inference Mode</div><div class="ri-val">Causal — 7-day boundary</div></div>
-      </div>
-      <div class="tgat-block" id="tgat-block" style="display:none">
-        <h4>🕸 TGAT Temporal Context</h4>
-        <div class="tgat-row"><span>TGAT Probability</span><span id="tgat-prob" style="color:var(--accent2)">—</span></div>
-        <div class="tgat-row"><span>Temporal Decay τ</span><span id="tgat-tau">—</span></div>
-        <div class="tgat-row"><span>History Half-Life</span><span id="tgat-hl">—</span></div>
-        <div class="tgat-row"><span>Card Context Norm</span><span id="tgat-norm">—</span></div>
-        <div class="tgat-row"><span>Temporal Context</span><span id="tgat-ctx" style="font-size:10px;max-width:260px;text-align:right;color:var(--muted)">—</span></div>
-      </div>
-      <div style="margin-top:12px;">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;">ANOMALY SIGNALS</div>
-        <ul class="signals-list" id="signals-list"></ul>
-      </div>
-      <div class="disclaimer" id="tgat-disclaimer"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════ PERFORMANCE ═══════════════ -->
-<section id="performance">
-  <h2>Model Performance <span class="badge">Test Set Results</span></h2>
-  <div class="grid-wide">
-    <div class="card">
-      <h3>Test F1 Comparison</h3>
-      <div class="chart-wrap"><canvas id="chart-comparison"></canvas></div>
-      <div class="disclaimer" style="margin-top:10px;">⚠ Published GNN-EADD (73%) uses a different dataset (Amazon review graph) and transductive protocol — NOT directly comparable to this inductive transaction stream evaluation.</div>
-    </div>
-    <div class="card">
-      <h3>E10 Confusion Matrix (Test Set)</h3>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Total test samples: 89,326 · Fraud: 3,114</div>
-      <div class="cm-grid">
-        <div class="cm-cell cm-tn"><div class="val">85,558</div><div class="lbl">True Negative</div><div class="lbl">Legit → Legit ✓</div></div>
-        <div class="cm-cell cm-fp"><div class="val">654</div><div class="lbl">False Positive</div><div class="lbl">Legit → Fraud ✗</div></div>
-        <div class="cm-cell cm-fn"><div class="val">1,411</div><div class="lbl">False Negative</div><div class="lbl">Fraud → Legit ✗</div></div>
-        <div class="cm-cell cm-tp"><div class="val">1,703</div><div class="lbl">True Positive</div><div class="lbl">Fraud → Fraud ✓</div></div>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px;">Source: reports/final_e10_test_results.json</div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:16px;">
-    <h3>Full Model Comparison Table</h3>
-    <table>
-      <tr><th>Model</th><th>Type</th><th>F1</th><th>Precision</th><th>Recall</th><th>AUROC</th><th>Status</th></tr>
-      <tr><td>Clean XGBoost Baseline</td><td><span class="tag test">TEST</span></td><td>49.69%</td><td>62.37%</td><td>41.30%</td><td>0.8932</td><td>Baseline</td></tr>
-      <tr><td>Hybrid T-GAT (E3)</td><td><span class="tag test">TEST</span></td><td>49.99%</td><td>56.75%</td><td>44.67%</td><td>0.8903</td><td>TGAT research direction</td></tr>
-      <tr><td>E2-B CatBoost (0-day)</td><td><span class="tag invalid">INVALID</span></td><td>69.22%</td><td>—</td><td>—</td><td>—</td><td>0-day label leakage</td></tr>
-      <tr><td>E6 Causal CatBoost</td><td><span class="tag test">TEST</span></td><td>56.48%</td><td>67.02%</td><td>48.81%</td><td>0.9236</td><td>First valid causal result</td></tr>
-      <tr style="background:rgba(59,130,246,.05)"><td><strong>E10 Static Ensemble</strong></td><td><span class="tag selected">SELECTED</span></td><td><strong>62.25%</strong></td><td><strong>72.25%</strong></td><td><strong>54.68%</strong></td><td><strong>0.9378</strong></td><td>✓ Authoritative final</td></tr>
-      <tr><td>E12 Continual Test</td><td><span class="tag test">TEST</span></td><td>61.18%</td><td>70.17%</td><td>54.24%</td><td>0.9314</td><td>Below E10 (−1.07pp)</td></tr>
-      <tr><td>GNN-EADD (External)</td><td><span class="tag external">EXTERNAL</span></td><td>73.00%</td><td>—</td><td>—</td><td>—</td><td>Not comparable ⚠</td></tr>
-    </table>
-  </div>
-</section>
-
-<!-- ═══════════════ CAUSAL ANALYSIS ═══════════════ -->
-<section id="causal">
-  <h2>Causal Information Availability Analysis <span class="badge">E13 Ablation</span></h2>
-  <div class="grid2">
-    <div class="card">
-      <h3>Label Delay vs. Validation F1</h3>
-      <div class="chart-wrap"><canvas id="chart-ablation"></canvas></div>
-      <div class="ablation-note">
-        <strong>Key finding:</strong> Reducing Δ from 7 days → 0 days inflates F1 by 15.2pp (59.78% → 74.98%). Δ=0 is <em>not deployment-realistic</em> — real chargebacks take days to process. This explains the gap with external benchmarks that may use 0-day or transductive protocols.
-      </div>
-    </div>
-    <div class="card">
-      <h3>E11/E14 Continual Learning (Validation Only)</h3>
-      <div class="chart-wrap"><canvas id="chart-continual"></canvas></div>
-      <div class="disclaimer" style="margin-top:10px;">These are VALIDATION results — not Test scores. E14 did not reach the +1.5pp robustness gate required to unfreeze the Test set. E10 remains authoritative.</div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════ EXPERIMENT TIMELINE ═══════════════ -->
-<section id="experiments">
-  <h2>Research Experiment Timeline</h2>
   <div class="card">
-    <div class="timeline" id="timeline"></div>
+    <h3>System Architecture — Amazon TGAT Graph Link Prediction</h3>
+    <div class="arch-flow">
+      <div class="arch-box"><div class="aname">Amazon Reviews</div><div class="adesc">Users, Products, Ratings, Timestamps</div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box"><div class="aname">Temporal Graph</div><div class="adesc">Chronological edges, causal masking</div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box tgat"><div class="aname">Amazon TGAT</div><div class="adesc">Causal Attention · Learned exp(-τΔt) decay</div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-box"><div class="aname">Anomaly Score</div><div class="adesc">Contrastive Link Reconstruction Error</div></div>
+    </div>
+    <div class="disclaimer">
+      <strong>Anomaly Definition:</strong> The raw Amazon Electronics dataset lacks ground-truth fraud labels. We detect anomalies via <em>self-supervised link prediction</em>. Highly improbable interactions between Users and Products (given their temporal graph history) produce high reconstruction errors and are classified as anomalous.
+    </div>
   </div>
 </section>
 
-<!-- ═══════════════ SYSTEM STATUS ═══════════════ -->
-<section id="system">
-  <h2>System Integrity & Status</h2>
-  <div class="sys-grid">
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">E10 Models Frozen</div><div class="sys-val">3 × .cbm (Git LFS)</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">TGAT Checkpoint</div><div class="sys-val" id="sys-tgat">Checking...</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">7-Day Causal Boundary</div><div class="sys-val">Enforced</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">Test Set Isolation</div><div class="sys-val">Permanently locked</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">FastAPI Backend</div><div class="sys-val" id="sys-api">Checking...</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">No Test-label Optimization</div><div class="sys-val">Verified</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">Google Colab Deployment</div><div class="sys-val">colab/run_demo.ipynb</div></div></div>
-    <div class="sys-item"><span class="sys-icon sys-check">✓</span><div><div class="sys-label">ngrok Tunnel</div><div class="sys-val">via Colab Secrets</div></div></div>
+<!-- ENTITY MAP -->
+<section>
+  <h2>Amazon Graph Entities <span class="badge primary">Dataset: Amazon Electronics</span></h2>
+  <div class="entity-grid">
+    <div class="entity-card">
+      <div class="icon">👤</div>
+      <div class="ename">User Node</div>
+      <div class="edesc">Amazon Reviewer (reviewerID)<br>Temporal embedding aggregated from prior reviews.</div>
+    </div>
+    <div class="entity-card">
+      <div class="icon">📦</div>
+      <div class="ename">Product Node</div>
+      <div class="edesc">Amazon Item (asin)<br>Temporal embedding aggregated from prior reviewers.</div>
+    </div>
+    <div class="entity-card">
+      <div class="icon">⭐</div>
+      <div class="ename">Review Edge</div>
+      <div class="edesc">Interaction Event<br>Edge attributes: Timestamp, Rating, Helpfulness Ratio.</div>
+    </div>
   </div>
+</section>
 
-  <div class="card" style="margin-top:16px;">
-    <h3>Research Contribution — Why This Project Matters</h3>
-    <div class="grid3">
-      <div style="background:var(--surface2);border-radius:8px;padding:14px;">
-        <div style="color:var(--accent);font-weight:700;margin-bottom:6px;">1. Causal Evaluation Protocol</div>
-        <div style="font-size:12px;color:var(--muted);">Enforces a 7-day label-availability boundary simulating real-world chargeback delays. Proves that standard evaluations often violate temporal causality.</div>
+<!-- LIVE INFERENCE -->
+<section id="live">
+  <h2>Live Anomaly Detection <span class="badge primary">Amazon TGAT Model</span></h2>
+  <div class="grid-wide">
+    
+    <div class="card">
+      <h3>Analyze Amazon Interaction</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>User ID (reviewerID)</label>
+          <input type="text" id="f-user" value="A34BZN6YJG123" placeholder="e.g. A2CX7LUOHB2NDG">
+        </div>
+        <div class="form-group">
+          <label>Product ID (asin)</label>
+          <input type="text" id="f-prod" value="B0002L5R78" placeholder="e.g. 0321732944">
+        </div>
+        <div class="form-group">
+          <label>Rating (overall)</label>
+          <input type="number" id="f-rating" value="5.0" min="1" max="5" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>Timestamp (Unix)</label>
+          <input type="number" id="f-time" value="">
+        </div>
       </div>
-      <div style="background:var(--surface2);border-radius:8px;padding:14px;">
-        <div style="color:var(--accent2);font-weight:700;margin-bottom:6px;">2. Information Availability Ablation</div>
-        <div style="font-size:12px;color:var(--muted);">E13 demonstrates that collapsing Δ from 7→0 days inflates F1 by 15pp. This provides a principled explanation for the gap between causal and benchmark evaluations.</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:8px;padding:14px;">
-        <div style="color:var(--accent3);font-weight:700;margin-bottom:6px;">3. Deployment Realism</div>
-        <div style="font-size:12px;color:var(--muted);">E10 achieves 62.25% Test F1 under strictly chronological inductive evaluation — a defensible, reproducible result for real-world e-commerce anomaly detection.</div>
+      <button class="analyze-btn" id="analyze-btn" onclick="analyzeInteraction()">Inspect Interaction 🔍</button>
+      
+      <div class="result-box" id="result-box">
+        <div class="risk-banner" id="risk-banner">
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">ANOMALY CLASSIFICATION</div>
+            <div class="risk-label" id="risk-label">—</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:600">RECONSTRUCTION ERROR</div>
+            <div class="risk-prob" id="risk-prob">—</div>
+          </div>
+        </div>
+        
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="ri-label">Link Similarity</div>
+            <div class="ri-val" id="r-sim">—</div>
+          </div>
+          <div class="result-item">
+            <div class="ri-label">User Embedding Norm</div>
+            <div class="ri-val" id="r-u-norm">—</div>
+          </div>
+          <div class="result-item">
+            <div class="ri-label">User Temporal Half-Life</div>
+            <div class="ri-val" id="r-u-hl">—</div>
+          </div>
+          <div class="result-item">
+            <div class="ri-label">Product Temporal Half-Life</div>
+            <div class="ri-val" id="r-p-hl">—</div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="disclaimer" style="margin-top:12px;">
-      Under the project's defined causal protocol, E10 achieves <strong>62.25% Test F1</strong>. The published GNN-EADD (73%) benchmark is not directly comparable — it evaluates a different dataset using a transductive node classification protocol. We do not claim to beat the benchmark, nor that 62.25% is the absolute ceiling of the dataset.
+    
+    <div class="card" style="display:flex; flex-direction:column; justify-content:center;">
+      <h3 style="margin-bottom:10px;">How Inference Works</h3>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
+        The Amazon TGAT evaluates the probability of a review occurring between a given User and Product at a specific Time.
+      </p>
+      <ul style="font-size:13px; color:var(--text); line-height:1.8; padding-left:20px; margin-bottom:20px;">
+        <li>Fetches the historical subgraph for the User and Product strictly before <code>t_target</code>.</li>
+        <li>Applies temporal attention with exponential decay (<code>τ</code>).</li>
+        <li>Computes the dot product of the contextual embeddings.</li>
+        <li>A low similarity score implies a <strong>highly anomalous</strong> interaction (e.g., review bot, hijacked account).</li>
+      </ul>
+      <div style="background:rgba(245,158,11,.1); border-left:3px solid var(--accent); padding:12px; font-size:12px; color:var(--muted);">
+        <em>Note: Demo mode utilizes cached proxy embeddings for speed. Full production deployments require a graph database to query ego-networks in real-time.</em>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- METHODOLOGY -->
+<section id="performance">
+  <h2>Methodology & Model Comparisons <span class="badge">Research Results</span></h2>
+  <div class="card">
+    <table>
+      <tr>
+        <th>Methodology</th>
+        <th>Dataset</th>
+        <th>Task Type</th>
+        <th>Evaluation Protocol</th>
+        <th>F1 Score</th>
+      </tr>
+      <tr style="background:rgba(245,158,11,.05)">
+        <td><strong>Our Amazon TGAT</strong> <span class="tag primary">PRIMARY</span></td>
+        <td>Amazon Electronics</td>
+        <td>Self-Supervised Link Prediction</td>
+        <td>Causal Inductive</td>
+        <td id="table-tgat-f1"><strong>Loading...</strong></td>
+      </tr>
+      <tr>
+        <td>GNN-EADD Paper <span class="tag external">BASE PAPER</span></td>
+        <td>Amazon (varies)</td>
+        <td>Node/Edge Spam Classification</td>
+        <td>Transductive (often semi-supervised)</td>
+        <td>~73.00% (Not directly comparable)</td>
+      </tr>
+      <tr>
+        <td>IEEE-CIS E10 CatBoost <span class="tag baseline">BASELINE</span></td>
+        <td>IEEE-CIS Transactions</td>
+        <td>Supervised Fraud Detection</td>
+        <td>Causal Inductive (7-day delay)</td>
+        <td>62.25%</td>
+      </tr>
+    </table>
+    
+    <div class="disclaimer">
+      <strong>Important Context:</strong> The GNN-EADD published benchmark of 73% utilizes transductive graph methods and external spam labels (or heuristic ground truths). Our implementation enforces strict causal isolation (no future edges) and relies on unsupervised link prediction, meaning the F1 scores represent completely different evaluation paradigms. The IEEE-CIS E10 model remains our validated baseline for supervised transaction fraud.
     </div>
   </div>
 </section>
@@ -408,208 +301,94 @@
 </main>
 
 <script>
-// ── API base (auto-detect) ──────────────────────────────────────────
 const API = (window.location.port === '' || window.location.protocol === 'file:')
   ? 'http://127.0.0.1:8000'
   : `${window.location.protocol}//${window.location.host}`;
 
-// ── Chart defaults ──────────────────────────────────────────────────
-Chart.defaults.color = '#64748b';
-Chart.defaults.borderColor = '#1f2d44';
-Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
-Chart.defaults.font.size = 11;
+// Set current Unix time as default
+document.getElementById('f-time').value = Math.floor(Date.now() / 1000);
 
-// ── Health check ────────────────────────────────────────────────────
+async function fetchMetrics() {
+  try {
+    const r = await fetch(`${API}/api/research-metrics`);
+    if (r.ok) {
+      const data = await r.json();
+      const tgatF1 = data.amazon_tgat?.F1;
+      
+      const f1Display = tgatF1 ? (tgatF1 * 100).toFixed(2) + '%' : 'Training...';
+      document.getElementById('kpi-tgat-f1').textContent = f1Display;
+      document.getElementById('table-tgat-f1').innerHTML = `<strong>${f1Display}</strong>`;
+    }
+  } catch(e) {
+    console.error("Failed to load metrics", e);
+  }
+}
+
 async function checkHealth() {
   try {
     const r = await fetch(`${API}/health`, {signal: AbortSignal.timeout(5000)});
     if (r.ok) {
-      const d = await r.json();
       document.getElementById('api-status-text').textContent = 'API Online';
-      document.getElementById('sys-api').textContent = 'Online';
-      const tgat = d.components?.tgat;
-      document.getElementById('sys-tgat').textContent = tgat?.loaded ? 'Loaded ✓' : 'Not loaded';
+      fetchMetrics();
     } else {
       document.getElementById('api-status-text').textContent = 'API Error';
     }
   } catch {
     document.getElementById('api-status-text').textContent = 'API Offline';
-    document.getElementById('sys-api').textContent = 'Offline';
   }
 }
 checkHealth();
-setInterval(checkHealth, 30000);
+setInterval(checkHealth, 15000);
 
-// ── Live inference ───────────────────────────────────────────────────
-async function analyzeTransaction() {
+async function analyzeInteraction() {
   const btn = document.getElementById('analyze-btn');
   btn.disabled = true;
-  btn.textContent = 'Analyzing…';
+  btn.textContent = 'Inspecting...';
 
   const payload = {
-    TransactionAmt: parseFloat(document.getElementById('f-amt').value) || 100,
-    ProductCD: document.getElementById('f-product').value,
-    card1: parseInt(document.getElementById('f-card1').value) || 10409,
-    card4: document.getElementById('f-card4').value,
-    P_emaildomain: document.getElementById('f-pemail').value || null,
-    R_emaildomain: document.getElementById('f-remail').value || null,
-    addr1: parseFloat(document.getElementById('f-addr1').value) || null,
-    DeviceInfo: document.getElementById('f-device').value || null,
+    reviewerID: document.getElementById('f-user').value || 'A1',
+    asin: document.getElementById('f-prod').value || 'B1',
+    overall: parseFloat(document.getElementById('f-rating').value) || 5.0,
+    unixReviewTime: parseFloat(document.getElementById('f-time').value) || (Date.now()/1000)
   };
 
   try {
-    const r = await fetch(`${API}/predict`, {
+    const r = await fetch(`${API}/predict/amazon`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(15000)
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d = await r.json();
     renderResult(d);
   } catch(e) {
-    alert(`API Error: ${e.message}\n\nMake sure FastAPI is running at ${API}`);
+    alert(`API Error: Make sure FastAPI is running at ${API}`);
   } finally {
     btn.disabled = false;
-    btn.textContent = '⚡ Analyze Transaction';
+    btn.textContent = 'Inspect Interaction 🔍';
   }
 }
 
 function renderResult(d) {
   const box = document.getElementById('result-box');
   box.classList.add('visible');
-  const prob = d.fraud_probability;
+  
+  const prob = d.anomaly_probability;
   const rl = (d.risk_level || 'UNKNOWN').toUpperCase();
   const banner = document.getElementById('risk-banner');
-  banner.className = 'risk-banner ' + ({'LOW':'low','MODERATE':'moderate','ELEVATED':'elevated','HIGH':'high'}[rl] || 'moderate');
+  
+  banner.className = 'risk-banner ' + ({'LOW':'low','MODERATE':'elevated','ELEVATED':'elevated','HIGH':'high'}[rl] || 'low');
   document.getElementById('risk-label').textContent = rl + ' RISK';
-  document.getElementById('risk-prob').textContent = (prob*100).toFixed(1) + '%';
-  document.getElementById('r-prediction').textContent = d.prediction === 'fraud' ? '⚠ ANOMALY DETECTED' : '✓ Normal Activity';
-
-  // TGAT block
-  const tgat = d.tgat;
-  if (tgat && tgat.enabled) {
-    document.getElementById('tgat-block').style.display = 'block';
-    document.getElementById('tgat-prob').textContent = tgat.probability != null ? (tgat.probability*100).toFixed(1)+'%' : 'N/A';
-    document.getElementById('tgat-tau').textContent = tgat.temporal_decay_tau ?? '—';
-    document.getElementById('tgat-hl').textContent = tgat.temporal_half_life_days ? tgat.temporal_half_life_days+' days' : '—';
-    document.getElementById('tgat-norm').textContent = tgat.card_context_norm ?? '—';
-    document.getElementById('tgat-ctx').textContent = tgat.temporal_context ?? '—';
-    document.getElementById('tgat-disclaimer').textContent = tgat.note ?? '';
-  }
-
-  // Signals
-  const sl = document.getElementById('signals-list');
-  sl.innerHTML = '';
-  (d.signals || []).forEach(s => {
-    const li = document.createElement('li');
-    li.textContent = s;
-    sl.appendChild(li);
-  });
+  
+  document.getElementById('risk-prob').textContent = prob != null ? (prob*100).toFixed(1) + '%' : 'N/A';
+  
+  document.getElementById('r-sim').textContent = d.similarity_score != null ? d.similarity_score.toFixed(4) : '—';
+  document.getElementById('r-u-norm').textContent = d.user_embedding_norm != null ? d.user_embedding_norm.toFixed(4) : '—';
+  
+  document.getElementById('r-u-hl').textContent = d.temporal_half_life_user_days ? d.temporal_half_life_user_days + 'd' : '—';
+  document.getElementById('r-p-hl').textContent = d.temporal_half_life_product_days ? d.temporal_half_life_product_days + 'd' : '—';
 }
-
-// ── Comparison chart ─────────────────────────────────────────────────
-new Chart(document.getElementById('chart-comparison'), {
-  type: 'bar',
-  data: {
-    labels: ['XGBoost Baseline', 'E6 Causal', 'E10 Ensemble\n(Selected)', 'E12 Continual', 'GNN-EADD\n(External ⚠)'],
-    datasets: [{
-      label: 'Test F1 (%)',
-      data: [49.69, 56.48, 62.25, 61.18, 73.00],
-      backgroundColor: ['#334155','#2563eb','#10b981','#2563eb','#4b5563'],
-      borderRadius: 5,
-      borderWidth: 1,
-      borderColor: ['#334155','#3b82f6','#34d399','#3b82f6','#6b7280'],
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: {display: false},
-      tooltip: {callbacks: {label: ctx => ` ${ctx.raw}% F1`}},
-    },
-    scales: {
-      y: {min: 40, max: 80, grid: {color: '#1f2d44'}, ticks: {callback: v => v+'%'}},
-      x: {grid: {display: false}}
-    }
-  }
-});
-
-// ── Ablation chart ───────────────────────────────────────────────────
-new Chart(document.getElementById('chart-ablation'), {
-  type: 'bar',
-  data: {
-    labels: ['Δ=7 days\n(Causal ✓)', 'Δ=1 day\n(Near real-time)', 'Δ=0 days\n(Instantaneous ✗)'],
-    datasets: [{
-      label: 'Validation F1 (%)',
-      data: [59.78, 65.11, 74.98],
-      backgroundColor: ['#10b981','#f59e0b','#ef4444'],
-      borderRadius: 5, borderWidth: 0,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: {display: false},
-      tooltip: {callbacks: {label: ctx => ` ${ctx.raw}% Val F1`}},
-    },
-    scales: {
-      y: {min: 50, max: 80, grid: {color: '#1f2d44'}, ticks: {callback: v => v+'%'}},
-      x: {grid: {display: false}}
-    }
-  }
-});
-
-// ── Continual learning chart ─────────────────────────────────────────
-new Chart(document.getElementById('chart-continual'), {
-  type: 'bar',
-  data: {
-    labels: ['E11: Static', 'E11: Continual\nEnsemble', 'E11: Rolling\n30D', 'E11: Recency\nWeighted', 'E11-B: Periodic\n7-Day', 'E14: Best\nSeed', 'E14: Robust\nMean'],
-    datasets: [{
-      label: 'Validation F1 (%)',
-      data: [56.46, 59.31, 59.88, 59.94, 60.32, 61.88, 61.24],
-      backgroundColor: '#2563eb',
-      borderRadius: 4, borderWidth: 0,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: {display: false},
-      tooltip: {callbacks: {label: ctx => ` ${ctx.raw}% Val F1`}},
-    },
-    scales: {
-      y: {min: 54, max: 64, grid: {color: '#1f2d44'}, ticks: {callback: v => v+'%'}},
-      x: {grid: {display: false}, ticks: {font: {size: 9}}}
-    }
-  }
-});
-
-// ── Experiment timeline ──────────────────────────────────────────────
-const experiments = [
-  {phase:'E1',name:'XGBoost Baseline',result:'49.69% Test F1',decision:'Baseline established',type:'test'},
-  {phase:'E2-B',name:'0-Day CatBoost',result:'69.22% Test F1',decision:'INVALIDATED — 0-day label leakage',type:'invalid'},
-  {phase:'E3',name:'Hybrid T-GAT',result:'49.99% Test F1',decision:'TGAT researched; tabular features dominate',type:'test'},
-  {phase:'E6',name:'7-Day Delayed CatBoost',result:'56.48% Test F1',decision:'First valid causal result',type:'test'},
-  {phase:'E10',name:'Causal CatBoost Ensemble (3×)',result:'62.25% Test F1',decision:'SELECTED — Authoritative final result',type:'selected'},
-  {phase:'E11',name:'Continual Learning (Validation)',result:'60.32% Val F1 (best: periodic 7D)',decision:'Gate PASSED → authorized E12 Test eval',type:'val'},
-  {phase:'E12',name:'Continual Learning Test',result:'61.18% Test F1',decision:'Below E10 by 1.07pp — E10 remains selected',type:'test'},
-  {phase:'E13',name:'Information Availability Ablation',result:'Δ=7d: 59.78% → Δ=0d: 74.98%',decision:'Key research finding — delay explains benchmark gap',type:'ablation'},
-  {phase:'E14',name:'Adaptive Continual (Validation)',result:'+0.92pp mean improvement',decision:'Gate FAILED (<1.5pp) — Test set remains frozen',type:'val'},
-];
-const tl = document.getElementById('timeline');
-experiments.forEach(e => {
-  const colorMap = {test:'var(--accent)',val:'var(--accent2)',selected:'var(--accent3)',invalid:'var(--danger)',ablation:'var(--warn)'};
-  tl.innerHTML += `
-  <div class="tl-item">
-    <div class="tl-phase" style="color:${colorMap[e.type]};border-color:${colorMap[e.type]};background:transparent">${e.phase}</div>
-    <div class="tl-content">
-      <div class="tl-name">${e.name}</div>
-      <div class="tl-result">${e.result}</div>
-      <div class="tl-decision" style="color:${colorMap[e.type]}">${e.decision}</div>
-    </div>
-  </div>`;
-});
 </script>
 </body>
 </html>

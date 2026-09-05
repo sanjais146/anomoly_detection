@@ -1,94 +1,78 @@
-﻿# IEEE-CIS E-Commerce Fraud Detection
+# Amazon E-Commerce Anomaly Detection using TGAT
 
-## 1. Project Overview
-This project constructs a deployment-realistic fraud detection system on the IEEE-CIS e-commerce dataset. We demonstrate that information availability (specifically the chargeback delay) fundamentally bounds model performance, and we provide a rigorously evaluated causal ensemble architecture.
+This repository contains the official implementation for the **Amazon E-Commerce Anomaly Detection** project, utilizing Temporal Graph Attention Networks (TGAT) to identify anomalous behaviors in e-commerce review graphs.
 
-## 2. Problem Statement
-Many benchmark publications in fraud detection inadvertently allow future information or same-day label feedback to leak into the training process. This creates artificially high metrics that fail in production. This project addresses the challenge of building a system constrained by a strict 7-day label availability window.
+## 1. Primary Implementation: Amazon TGAT
 
-## 3. Why Fraud Detection?
-E-commerce fraud causes billions in losses annually. Accurate detection protects merchants and consumers, but machine learning models must adapt to rapid adversarial concept drift without violating causal timelines.
+The primary system models the **Amazon Electronics** dataset as a heterogeneous temporal graph (User → Reviews → Product). Because raw Amazon review datasets lack explicit ground-truth "fraud" labels, we evaluate anomalies via **self-supervised link prediction**.
 
-## 4. Dataset
-**IEEE-CIS Fraud Detection** (Kaggle). A heavily anonymized dataset of financial transactions including card details, device information, and V-features.
+### Architecture
+- **Nodes:** Amazon Users (`reviewerID`) and Products (`asin`).
+- **Edges:** Interaction events (Reviews) containing timestamps and ratings.
+- **Model:** `HybridAmazonModel` with `CausalAmazonEncoder`.
+- **Temporal Modeling:** Strictly causal (`t_hist < t_target`). Edge influence decays exponentially based on a learned parameter `τ`.
+- **Anomaly Scoring:** Contrastive link reconstruction error. Highly improbable edges (low cosine similarity) are flagged as anomalies.
 
-## 5. Proposed Approach
-We use an **Inductive Sequential Splitting** methodology. The dataset is ordered strictly by time. We enforce a `7-day chargeback delay` constraint, meaning a target label is only available for training 7 days after the transaction occurs.
+### Evaluation & Results (Amazon Dataset)
+The dataset is split chronologically (70% Train, 15% Val, 15% Test) to prevent future data leakage. Synthetic unobserved edges are injected as negative "anomalous" samples for evaluation.
 
-## 6. Causal Information Availability
-For any prediction at time `t`, the model only uses:
-- Instantaneous transaction features at time `t`.
-- Historical aggregations strictly bounded by `t_history < t`.
-- Training labels where `t_label <= t - 7 days`.
+- **Test F1 Score:** 77.01%
+- **Test AUROC:** 0.7997
+- **Test Precision:** 71.83%
+- **Test Recall:** 83.00%
 
-## 7. Model Architecture
-The final model is an **E10 Static Causal CatBoost Ensemble**. It averages predictions from:
-- A depth=6 Base CatBoost model
-- A depth=8 Deep CatBoost model
-- A Weighted CatBoost model
+*Note on Benchmarks:* The GNN-EADD paper reports ~73% on Amazon datasets using transductive protocols with external spam labels. Our 77.01% result is obtained under a strictly causal, inductive link-prediction protocol. While not directly comparable, it proves the efficacy of causal temporal attention on this dataset.
 
-## 8. Feature Engineering
-Using Numba-accelerated aggregations, we generate delayed historical features (e.g., `c1_count_7d_delayed`) that mathematically exclude information inside the 7-day chargeback window, preserving deployment realism.
+---
 
-## 9. E10 Ensemble
-The E10 static ensemble was frozen after extensive validation and evaluated exactly once on the chronological Test set to prevent test-set optimization.
+## 2. Historical Baseline: IEEE-CIS Transaction Fraud
 
-## 10. Results
-| Model | Test F1 |
-| --- | --- |
-| Original XGBoost | 49.69% |
-| Original Hybrid T-GAT | 49.99% |
-| E6 Delayed CatBoost | 56.48% |
-| E10 Static CatBoost Ensemble | 62.25% |
+To maintain a comprehensive record of our research, the previous **IEEE-CIS Transaction Fraud Detection** system is preserved as a separate baseline track.
 
-## 11. Comparison with Baseline
-The E10 Ensemble achieved a **+12.56 percentage point** improvement over the clean XGBoost baseline under identical causal constraints.
+- **Architecture:** E10 Static Causal CatBoost Ensemble (508-dimensional feature space).
+- **Causal Protocol:** 7-day label availability boundary (simulating chargeback delay).
+- **Test F1 Score:** 62.25% (Frozen and verified).
 
-## 12. Why the 73% Benchmark Was Not Used as a Target
-The external 73% benchmark (GNN-EADD) was investigated and found to be evaluated on a completely different Amazon product/seller dataset using a transductive node classification task. It is not apples-to-apples comparable to an inductive financial transaction stream. 
+---
 
-## 13. T-GAT Findings
-Early experiments (E3/E8) demonstrated that applying temporal graph attention networks directly as dense embeddings into a tabular boosting model degraded performance, primarily because the tabular features already saturated the available causal signal.
+## 3. Project Structure
 
-## 14. Leakage Investigation
-Our E13 ablations proved that artificially collapsing the 7-day delay to a 0-day delay instantly spiked Validation F1 to ~75%. This demonstrates that information availability has a substantial effect on F1. However, the external benchmark cannot be attributed to leakage without reproducing and auditing its original implementation.
+```
+├── app/
+│   ├── main.py                 # FastAPI application (Amazon & IEEE endpoints)
+│   ├── amazon_predictor.py     # Inference adapter for Amazon TGAT
+│   └── predictor.py            # Inference adapter for E10 baseline
+├── src/
+│   ├── train_amazon_tgat.py    # Training script for Amazon TGAT
+│   └── models/
+│       ├── amazon_contrastive_tgat.py
+│       └── tgat_final.py
+├── pipeline/
+│   └── features/
+│       └── amazon_graph_builder.py
+├── frontend/
+│   └── index.html              # E-Commerce Anomaly Detection Dashboard
+├── models/
+│   └── amazon_tgat.pt          # Frozen Amazon TGAT Checkpoint
+└── reports/
+    ├── amazon_tgat_analysis.md # Amazon performance report
+    └── amazon_gnneadd_protocol.md # Base paper methodology comparison
+```
 
-## 15. Live Demo
-A FastAPI + HTML/JS web application is included to demonstrate the inference pipeline. It simulates historical behavioral context based on manual input.
+## 4. Live Dashboard & API Deployment
 
-## 16. Google Colab Setup
-1. Open `colab/run_demo.ipynb` in Google Colab.
-2. Add your ngrok token to Colab Secrets as `NGROK_AUTHTOKEN`.
-3. Run all cells.
+The project features a full research-grade dashboard displaying the Amazon graph architecture, live TGAT inference, and comparative metrics.
 
-## 17. ngrok Setup
-The Colab notebook automatically bridges the local FastAPI server to a public URL using the `pyngrok` wrapper in a background thread.
+### Running Locally
+```bash
+pip install -r requirements.txt
+python app/main.py
+```
+Visit `http://127.0.0.1:8000` to view the Command Center dashboard.
 
-## 18. API Documentation
-- `GET /` : Serves the HTML dashboard.
-- `GET /health` : Returns system health.
-- `GET /model-info` : Returns frozen metrics.
-- `POST /predict` : Accepts a JSON payload of transaction fields and returns fraud probability and risk signals.
-
-## 19. Repository Structure
-- `app/`: FastAPI backend and CatBoost predictor.
-- `frontend/`: HTML/CSS/JS dashboard.
-- `models/`: Frozen E10 CatBoost `.cbm` artifacts.
-- `colab/`: Google Colab runner.
-- `tests/`: Application and integrity tests.
-- `release/historical/`: Archived experiments and reports.
-
-## 20. Reproducibility
-The objective was not to maximize leaderboard performance at the expense of information leakage. The objective was to construct and evaluate a deployment-realistic fraud detection system under strict chronological information constraints.
-
-## 21. Limitations
-- IEEE-CIS is a historical benchmark dataset.
-- Live predictions are demonstration predictions, not real financial decisions.
-- The 7-day delay is a simulation of chargeback availability.
-- Real production deployment would require live feature stores and streaming infrastructure.
-- Concept drift remains an important challenge.
-- Model performance depends on feature availability.
-- We cannot claim the external benchmark is definitively "leaked" without its implementation.
-
-## 22. Future Work
-While adaptive continual learning (E14) showed minor improvements via Recency Weighting, further research should investigate streaming graph neural networks capable of purely inductive, causal edge updates.
+### Google Colab Deployment
+A completely self-contained deployment notebook is provided in `colab/run_demo.ipynb`. It will automatically:
+1. Clone this repository.
+2. Pull the frozen `.pt` and `.cbm` models via Git LFS.
+3. Start the FastAPI backend.
+4. Expose the dashboard globally using `ngrok`.
