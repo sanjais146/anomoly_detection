@@ -50,16 +50,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Anomaly Distribution
+    // Rating Distribution
     const ctxDist = document.getElementById('chart-anomaly-dist');
     const distChart = new Chart(ctxDist, {
         type: 'bar',
         data: {
-            labels: ['0.0-0.2', '0.2-0.4', '0.4-0.6', '0.6-0.8', '0.8-1.0'],
+            labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
             datasets: [{
-                label: 'Anomaly Score Freq',
+                label: 'Rating Freq',
                 data: [0, 0, 0, 0, 0],
-                backgroundColor: ['#10b981', '#10b981', '#f59e0b', '#ef4444', '#ef4444']
+                backgroundColor: ['#ef4444', '#f59e0b', '#fcd34d', '#10b981', '#059669']
             }]
         },
         options: {
@@ -135,10 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             
-            // Remove watermarks
+            // Remove watermarks & show labels
             document.getElementById('wm-timeline').style.display = 'none';
             document.getElementById('wm-dist').style.display = 'none';
             document.getElementById('wm-graph').style.display = 'none';
+            if (document.getElementById('lbl-timeline')) document.getElementById('lbl-timeline').style.display = 'block';
+            if (document.getElementById('lbl-dist')) document.getElementById('lbl-dist').style.display = 'block';
+            if (document.getElementById('lbl-graph')) document.getElementById('lbl-graph').style.display = 'block';
         } catch (e) {
             console.error("Failed to load analytics:", e);
         }
