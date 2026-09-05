@@ -15,8 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add active class to clicked
             item.classList.add('active');
-            const targetId = `tab-${item.getAttribute('data-tab')}`;
-            document.getElementById(targetId).classList.add('active');
+            const target = item.getAttribute('data-tab');
+            const targetId = `tab-${target}`;
+            const contentEl = document.getElementById(targetId);
+            contentEl.classList.add('active');
+            
+            // Resize charts and graphs because changing display from none to block breaks sizing
+            if(target === 'overview') {
+                if(overviewNetwork) setTimeout(() => overviewNetwork.fit(), 50);
+            }
+            if(target === 'graph-analytics') {
+                if(network) setTimeout(() => network.fit(), 50);
+                if (document.getElementById('wm-graph')) document.getElementById('wm-graph').style.display = 'none';
+                if (document.getElementById('lbl-graph')) document.getElementById('lbl-graph').style.display = 'block';
+            }
             
             // Update title
             pageTitle.innerText = item.innerText.trim();
@@ -70,6 +82,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Temporal Decay Chart
+    const decayCtx = document.getElementById('chart-temporal-decay');
+    const tau = 0.431;
+    const decayLabels = [];
+    const decayData = [];
+    for(let d=0; d<=14; d+=0.5) {
+        decayLabels.push(d + 'd');
+        decayData.push(Math.exp(-tau * d));
+    }
+    if (decayCtx) {
+        new Chart(decayCtx, {
+            type: 'line',
+            data: {
+                labels: decayLabels,
+                datasets: [{
+                    label: 'w(Δt) Weight',
+                    data: decayData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    x: { title: { display: true, text: 'Time Difference (Days)' } },
+                    y: { title: { display: true, text: 'Temporal Weight' }, min: 0, max: 1.05 }
+                }
+            }
+        });
+    }
+
     // --- 3. Initialize Graph Analytics (Vis.js) ---
     const visContainer = document.getElementById('vis-network');
     const nodes = new vis.DataSet([]);
@@ -93,21 +141,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const network = new vis.Network(visContainer, networkData, networkOptions);
     
+    let overviewNetwork = null;
+
     // --- Initial Data Load ---
     async function loadAnalytics() {
         try {
             const res = await fetch('/analytics/amazon');
             const data = await res.json();
             
-            // Populate timeline
+            // Populate timeline (from grouped timeline payload)
             const tLabels = [];
             const tData = [];
-            let i = 0;
-            data.sample_graph.forEach(node => {
-                tLabels.push(new Date(node.unixReviewTime * 1000).toLocaleDateString());
-                i++;
-                tData.push(i); // cumulative interactions in sample
-            });
+            if (data.timeline) {
+                data.timeline.forEach(item => {
+                    tLabels.push(item.date);
+                    tData.push(item.count);
+                });
+            }
             timelineChart.data.labels = tLabels;
             timelineChart.data.datasets[0].data = tData;
             timelineChart.update();
@@ -116,32 +166,40 @@ document.addEventListener('DOMContentLoaded', () => {
             distChart.data.datasets[0].data = data.rating_distribution;
             distChart.update();
             
-            // Populate Vis.js Graph
+            // Populate Vis.js Graphs (Overview and Main)
+            const sampleNodes = new vis.DataSet();
+            const sampleEdges = new vis.DataSet();
+            
             data.sample_graph.forEach(edge => {
                 const uId = "U_" + edge.reviewerID;
                 const pId = "P_" + edge.asin;
                 
-                if(!nodes.get(uId)) {
-                    nodes.add({ id: uId, label: 'User', color: '#3b82f6', shape: 'dot' });
+                if(!sampleNodes.get(uId)) {
+                    sampleNodes.add({ id: uId, label: 'User', title: edge.reviewerID, color: '#3b82f6', shape: 'dot' });
+                    nodes.add({ id: uId, label: 'User', title: edge.reviewerID, color: '#3b82f6', shape: 'dot' });
                 }
-                if(!nodes.get(pId)) {
-                    nodes.add({ id: pId, label: 'Product', color: '#10b981', shape: 'square' });
+                if(!sampleNodes.get(pId)) {
+                    sampleNodes.add({ id: pId, label: 'Product', title: edge.asin, color: '#10b981', shape: 'square' });
+                    nodes.add({ id: pId, label: 'Product', title: edge.asin, color: '#10b981', shape: 'square' });
                 }
                 
-                edges.add({
-                    from: uId,
-                    to: pId,
-                    color: { color: '#d1d5db' },
-                });
+                sampleEdges.add({ from: uId, to: pId, color: { color: '#d1d5db' }, title: 'Rating: ' + edge.overall });
+                edges.add({ from: uId, to: pId, color: { color: '#d1d5db' }, title: 'Rating: ' + edge.overall });
             });
             
+            // Init Overview Graph
+            const overviewContainer = document.getElementById('vis-network-overview');
+            if (overviewContainer) {
+                overviewNetwork = new vis.Network(overviewContainer, {nodes: sampleNodes, edges: sampleEdges}, networkOptions);
+                setTimeout(() => overviewNetwork.fit(), 500);
+            }
+            
             // Remove watermarks & show labels
-            document.getElementById('wm-timeline').style.display = 'none';
-            document.getElementById('wm-dist').style.display = 'none';
-            document.getElementById('wm-graph').style.display = 'none';
+            if (document.getElementById('wm-timeline')) document.getElementById('wm-timeline').style.display = 'none';
+            if (document.getElementById('wm-dist')) document.getElementById('wm-dist').style.display = 'none';
+            if (document.getElementById('wm-graph-overview')) document.getElementById('wm-graph-overview').style.display = 'none';
             if (document.getElementById('lbl-timeline')) document.getElementById('lbl-timeline').style.display = 'block';
             if (document.getElementById('lbl-dist')) document.getElementById('lbl-dist').style.display = 'block';
-            if (document.getElementById('lbl-graph')) document.getElementById('lbl-graph').style.display = 'block';
         } catch (e) {
             console.error("Failed to load analytics:", e);
         }
@@ -161,8 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resClass = document.getElementById('res-classification');
     const resUserEmb = document.getElementById('res-user-emb');
     const resProdEmb = document.getElementById('res-prod-emb');
-    const recentTbody = document.getElementById('recent-tbody');
-    const emptyRow = document.getElementById('empty-row');
+    const recentTbody = document.getElementById('recent-table-tbody');
+    const emptyRow = document.getElementById('recent-empty-row');
     
     // Chart Data Arrays
     let timelineLabels = [];

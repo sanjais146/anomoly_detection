@@ -88,54 +88,89 @@
             <div class="content-scroll">
                 <!-- OVERVIEW TAB -->
                 <section id="tab-overview" class="tab-content active">
-                    <div class="kpi-grid">
-                        <div class="card kpi-card">
-                            <div class="kpi-header">TGAT Test F1</div>
-                            <div class="kpi-value highlight">77.01%</div>
-                            <div class="kpi-footer">Self-supervised link prediction</div>
-                        </div>
-                        <div class="card kpi-card">
-                            <div class="kpi-header">TGAT Recall</div>
-                            <div class="kpi-value">83.00%</div>
-                            <div class="kpi-footer">Anomaly detection sensitivity</div>
-                        </div>
-                        <div class="card kpi-card">
-                            <div class="kpi-header">Graph Size</div>
-                            <div class="kpi-value">20k+</div>
-                            <div class="kpi-footer">Verified Amazon Interactions</div>
-                        </div>
-                        <div class="card kpi-card warning">
-                            <div class="kpi-header">E10 Baseline F1</div>
-                            <div class="kpi-value">62.25%</div>
-                            <div class="kpi-footer">IEEE-CIS / Static Features</div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-grid">
-                        <div class="card col-span-2">
-                            <div class="card-header flex-between">
-                                <h3>Temporal Interaction Timeline</h3>
-                                <span class="badge bg-neutral-light text-gray-500">Sample of 100 Real Reviews</span>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="chart-temporal-timeline"></canvas>
-                                <div class="watermark" id="wm-timeline">Awaiting verified dataset/API data</div>
-                                <div class="text-xs text-gray-400 mt-2 text-center" id="lbl-timeline" style="display: none;">Representative sample of 100 real Amazon Electronics reviews</div>
+                    <!-- KPI Row -->
+                    <div class="dashboard-grid mb-6" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="card">
+                            <div class="card-body p-4 text-center">
+                                <div class="text-sm text-gray-500 mb-1">TGAT Test F1</div>
+                                <div class="text-2xl font-bold text-primary">77.01%</div>
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-header flex-between">
-                                <h3>Amazon Review Rating Distribution</h3>
-                                <span class="badge bg-neutral-light text-gray-500">Sample of 100</span>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="chart-anomaly-dist"></canvas>
-                                <div class="watermark" id="wm-dist">Awaiting verified dataset/API data</div>
-                                <div class="text-xs text-gray-400 mt-2 text-center" id="lbl-dist" style="display: none;">Representative sample of 100 real Amazon Electronics reviews</div>
+                            <div class="card-body p-4 text-center">
+                                <div class="text-sm text-gray-500 mb-1">TGAT Recall</div>
+                                <div class="text-2xl font-bold text-primary">83.00%</div>
                             </div>
                         </div>
-                        
-                        <div class="card col-span-3">
+                        <div class="card">
+                            <div class="card-body p-4 text-center">
+                                <div class="text-sm text-gray-500 mb-1">Training Graph</div>
+                                <div class="text-2xl font-bold text-gray-800">20,000</div>
+                                <div class="text-xs text-gray-400">Interactions</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body p-4 text-center">
+                                <div class="text-sm text-gray-500 mb-1">E10 Baseline F1</div>
+                                <div class="text-2xl font-bold text-neutral">62.25%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="dashboard-grid mb-6">
+                        <div class="card col-span-2">
+                            <div class="card-header flex-between border-b">
+                                <h3>Interaction Timeline <span class="text-xs text-gray-400 font-normal ml-2">Representative Sample</span></h3>
+                                <span class="badge bg-neutral-light text-gray-500 border">Real Amazon Electronics data</span>
+                            </div>
+                            <div class="card-body relative" style="min-height: 250px;">
+                                <canvas id="chart-temporal-timeline"></canvas>
+                                <div class="watermark" id="wm-timeline">Awaiting verified dataset/API data</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header flex-between border-b">
+                                <h3>Amazon Review Rating Distribution</h3>
+                            </div>
+                            <div class="card-body relative" style="min-height: 250px;">
+                                <canvas id="chart-anomaly-dist"></canvas>
+                                <div class="watermark" id="wm-dist">Awaiting verified dataset/API data</div>
+                                <div class="text-xs text-gray-400 mt-4 text-center" id="lbl-dist" style="display: none;">Representative sample of 100 real Amazon Electronics reviews</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Row 3 -->
+                    <div class="dashboard-grid mb-6">
+                        <div class="card col-span-2 flex flex-col">
+                            <div class="card-header border-b flex-between">
+                                <h3>User/Product Graph Preview</h3>
+                                <span class="badge bg-neutral-light text-gray-500 border">Representative sample of real Amazon Electronics interactions</span>
+                            </div>
+                            <div class="card-body flex-1 p-0 relative" style="min-height: 350px;">
+                                <div id="vis-network-overview" class="vis-container w-full h-full" style="height: 100%; width: 100%;"></div>
+                                <div class="watermark" id="wm-graph-overview">Awaiting verified dataset/API data</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header border-b">
+                                <h3>TGAT Temporal Parameters</h3>
+                            </div>
+                            <div class="card-body">
+                                <ul class="stats-list">
+                                    <li><span>Learned Decay τ (Tau)</span> <strong>0.431</strong></li>
+                                    <li><span>Temporal Half-life</span> <strong>~1.6 days</strong></li>
+                                    <li><span>Causal Masking</span> <strong class="text-green">Active</strong></li>
+                                    <li><span>Future Leakage</span> <strong>0.0%</strong></li>
+                                </ul>
+                                <div class="mt-6 text-sm text-gray-600 bg-gray-100 p-3 rounded">
+                                    <strong>w(Δt) = exp(-τ × Δt)</strong><br>
+                                    Mathematical enforcement of temporal causality during graph encoding.
+                                </div>
+                            </div>
+                        </div>
+                    </div>    <div class="card col-span-3">
                             <div class="card-header flex-between">
                                 <h3>Recent / Inspected Interactions</h3>
                                 <button class="btn btn-sm btn-outline" onclick="document.querySelector('[data-tab=\'anomaly-detection\']').click()"><i class="fa-solid fa-plus"></i> Analyze New</button>
@@ -152,9 +187,12 @@
                                             <th>Classification</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="recent-tbody">
-                                        <tr class="empty-state" id="empty-row">
-                                            <td colspan="6">No recent interactions analyzed. Use the Anomaly Detection tab to dynamically generate data.</td>
+                                    <tbody id="recent-table-tbody">
+                                        <tr id="recent-empty-row">
+                                            <td colspan="6" class="text-center py-8 text-gray-500">
+                                                No live anomaly predictions yet.<br>
+                                                Run an interaction through Anomaly Detection to populate this table.
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -287,6 +325,16 @@
                                     </div>
                                 </div>
                                 <div class="mt-8 pt-4 border-t">
+                                    <div class="flex-between mb-4">
+                                        <h4>Temporal Decay Function</h4>
+                                        <span class="badge bg-neutral-light text-gray-500 border">Learned τ = 0.431</span>
+                                    </div>
+                                    <div class="relative w-full" style="height: 250px;">
+                                        <canvas id="chart-temporal-decay"></canvas>
+                                    </div>
+                                    <div class="text-xs text-gray-400 text-center mt-2">Mathematical decay curve w(Δt) = exp(-0.431 * Δt) across 14 days</div>
+                                </div>
+                                <div class="mt-8 pt-4 border-t">
                                     <h4>Learned Temporal Parameters (Amazon Electronics)</h4>
                                     <ul class="stats-list mt-4">
                                         <li><span>Decay Factor (τ)</span> <strong>0.431</strong></li>
@@ -371,6 +419,17 @@
                                 data/amazon/raw/reviews_Electronics.json.gz (1.77 GB)<br>
                                 data/amazon/raw/meta_Electronics.json.gz (186 MB)
                             </code>
+                            
+                            <div class="grid-2-col mb-4">
+                                <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                                    <strong class="text-blue-900 block mb-1">Full Training Data</strong>
+                                    <span class="text-blue-800 text-xs">20,000 real Amazon Electronics interactions strictly chronological for contrastive training.</span>
+                                </div>
+                                <div class="p-3 bg-gray-100 border-l-4 border-gray-400 rounded">
+                                    <strong class="text-gray-800 block mb-1">Dashboard Visualization Sample</strong>
+                                    <span class="text-gray-600 text-xs">100 real Amazon Electronics reviews deterministically sampled to render UI graphs safely.</span>
+                                </div>
+                            </div>
                             
                             <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Verified Real Graph Topology</h4>
                             <ul class="list-disc pl-5 mb-4 text-gray-600">

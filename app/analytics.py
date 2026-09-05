@@ -40,7 +40,7 @@ def get_amazon_analytics():
                     idx = min(int(rating) - 1, 4)
                     analytics["rating_distribution"][idx] += 1
                     
-                    if len(analytics["sample_graph"]) < 30:
+                    if len(analytics["sample_graph"]) < 100:
                         analytics["sample_graph"].append({
                             "reviewerID": data.get("reviewerID"),
                             "asin": data.get("asin"),
@@ -50,7 +50,18 @@ def get_amazon_analytics():
                 except:
                     pass
                     
-        # Sort graph for timeline
-        analytics["sample_graph"].sort(key=lambda x: x.get("unixReviewTime", 0))
+        # Calculate real timeline bins (Group by Year-Month or Day)
+        import datetime
+        timeline_counts = {}
+        for edge in analytics["sample_graph"]:
+            t = edge.get("unixReviewTime", 0)
+            if t > 0:
+                # Format to YYYY-MM
+                date_str = datetime.datetime.fromtimestamp(t).strftime('%Y-%m')
+                timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
+        
+        # Sort chronologically
+        sorted_dates = sorted(timeline_counts.keys())
+        analytics["timeline"] = [{"date": d, "count": timeline_counts[d]} for d in sorted_dates]
         
     return analytics
