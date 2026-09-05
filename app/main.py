@@ -34,6 +34,7 @@ from app.predictor import get_predictor
 
 # Primary Amazon TGAT predictor
 from app.amazon_predictor import get_amazon_predictor, amazon_demo_inference
+from app.analytics import get_amazon_analytics
 
 app = FastAPI(
     title="Amazon E-Commerce Anomaly Detection API",
@@ -112,6 +113,14 @@ def research_metrics():
         }
         
     return JSONResponse(content=data)
+
+@app.get("/analytics/amazon")
+def analytics_amazon():
+    """Serves real Amazon dataset stats and sample graph interactions."""
+    try:
+        return get_amazon_analytics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/predict/amazon")
 def predict_amazon_anomaly(interaction: AmazonInteractionInput):

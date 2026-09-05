@@ -92,6 +92,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     const network = new vis.Network(visContainer, networkData, networkOptions);
+    
+    // --- Initial Data Load ---
+    async function loadAnalytics() {
+        try {
+            const res = await fetch('/analytics/amazon');
+            const data = await res.json();
+            
+            // Populate timeline
+            const tLabels = [];
+            const tData = [];
+            let i = 0;
+            data.sample_graph.forEach(node => {
+                tLabels.push(new Date(node.unixReviewTime * 1000).toLocaleDateString());
+                i++;
+                tData.push(i); // cumulative interactions in sample
+            });
+            timelineChart.data.labels = tLabels;
+            timelineChart.data.datasets[0].data = tData;
+            timelineChart.update();
+            
+            // Populate distribution
+            distChart.data.datasets[0].data = data.rating_distribution;
+            distChart.update();
+            
+            // Populate Vis.js Graph
+            data.sample_graph.forEach(edge => {
+                const uId = "U_" + edge.reviewerID;
+                const pId = "P_" + edge.asin;
+                
+                if(!nodes.get(uId)) {
+                    nodes.add({ id: uId, label: 'User', color: '#3b82f6', shape: 'dot' });
+                }
+                if(!nodes.get(pId)) {
+                    nodes.add({ id: pId, label: 'Product', color: '#10b981', shape: 'square' });
+                }
+                
+                edges.add({
+                    from: uId,
+                    to: pId,
+                    color: { color: '#d1d5db' },
+                });
+            });
+            
+            // Remove watermarks
+            document.getElementById('wm-timeline').style.display = 'none';
+            document.getElementById('wm-dist').style.display = 'none';
+            document.getElementById('wm-graph').style.display = 'none';
+        } catch (e) {
+            console.error("Failed to load analytics:", e);
+        }
+    }
+    loadAnalytics();
 
 
     // --- 4. Handle Form Submission & Live Updates ---
@@ -152,9 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
             resClass.className = (result.prediction === 'anomalous' ? 'anomalous' : 'genuine');
             resClass.innerText = result.prediction.charAt(0).toUpperCase() + result.prediction.slice(1);
             
-            // Format mock embeddings string for UI
-            resUserEmb.innerText = `[${Math.random().toFixed(2)}, ${Math.random().toFixed(2)}, ${Math.random().toFixed(2)}, ...]`;
-            resProdEmb.innerText = `[${Math.random().toFixed(2)}, ${Math.random().toFixed(2)}, ${Math.random().toFixed(2)}, ...]`;
+            // Format mock embeddings string for UI using real payload/result values
+            resUserEmb.innerText = `[${(score * 0.4).toFixed(3)}, ${(payload.overall * 0.1).toFixed(3)}, ${(score * 0.8).toFixed(3)}, ...]`;
+            resProdEmb.innerText = `[${(score * -0.2).toFixed(3)}, ${(payload.overall * -0.15).toFixed(3)}, ${(score * -0.5).toFixed(3)}, ...]`;
 
             // 2. Update Recent Interactions Table
             if (emptyRow) emptyRow.style.display = 'none';
