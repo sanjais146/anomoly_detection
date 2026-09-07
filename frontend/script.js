@@ -9,29 +9,36 @@ document.addEventListener('DOMContentLoaded', () => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             
-            // Remove active class from all
             navItems.forEach(nav => nav.classList.remove('active'));
             tabContents.forEach(tab => tab.classList.remove('active'));
             
-            // Add active class to clicked
             item.classList.add('active');
             const target = item.getAttribute('data-tab');
             const targetId = `tab-${target}`;
             const contentEl = document.getElementById(targetId);
             contentEl.classList.add('active');
             
-            // Resize charts and graphs because changing display from none to block breaks sizing
-            if(target === 'overview') {
-                if(overviewNetwork) setTimeout(() => overviewNetwork.fit(), 50);
+            // Update header title
+            pageTitle.innerText = item.innerText.trim();
+            
+            // Resize ALL Chart.js instances after a short delay (tab was display:none before)
+            setTimeout(() => {
+                if (typeof Chart !== 'undefined') {
+                    Chart.instances && Object.values(Chart.instances).forEach(c => {
+                        try { c.resize(); } catch(e) {}
+                    });
+                }
+            }, 80);
+            
+            // Vis.js networks need fit() after becoming visible
+            if (target === 'overview' && typeof overviewNetwork !== 'undefined' && overviewNetwork) {
+                setTimeout(() => overviewNetwork.fit(), 120);
             }
-            if(target === 'graph-analytics') {
-                if(network) setTimeout(() => network.fit(), 50);
+            if (target === 'graph-analytics' && typeof network !== 'undefined' && network) {
+                setTimeout(() => network.fit(), 120);
                 if (document.getElementById('wm-graph')) document.getElementById('wm-graph').style.display = 'none';
                 if (document.getElementById('lbl-graph')) document.getElementById('lbl-graph').style.display = 'block';
             }
-            
-            // Update title
-            pageTitle.innerText = item.innerText.trim();
         });
     });
 

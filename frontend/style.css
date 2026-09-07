@@ -474,10 +474,25 @@ body {
     font-size: 12px;
 }
 
+
 /* Charts and Visualization */
-canvas {
+/* IMPORTANT: Chart.js with maintainAspectRatio:false reads parent HEIGHT.
+   Never set max-height on canvas globally — it breaks the chart height computation.
+   Instead size the .chart-wrap parent div and let canvas fill it. */
+.chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 260px;
+}
+.chart-wrap canvas {
     width: 100% !important;
-    max-height: 250px;
+    height: 100% !important;
+}
+/* Vis.js containers need explicit px height */
+.vis-container {
+    width: 100%;
+    height: 320px;
+    background: #fff;
 }
 .watermark {
     position: absolute;

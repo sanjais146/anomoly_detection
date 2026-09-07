@@ -128,8 +128,10 @@
                                 <h3>Interaction Timeline <span class="text-xs text-gray-400 font-normal ml-2">Representative Sample</span></h3>
                                 <span class="badge bg-neutral-light text-gray-500 border">Real Amazon Electronics data</span>
                             </div>
-                            <div class="card-body relative" style="min-height: 250px;">
-                                <canvas id="chart-temporal-timeline"></canvas>
+                            <div class="card-body relative" style="padding:12px">
+                                <div class="chart-wrap">
+                                    <canvas id="chart-temporal-timeline"></canvas>
+                                </div>
                                 <div class="watermark" id="wm-timeline">Awaiting verified dataset/API data</div>
                             </div>
                         </div>
@@ -137,10 +139,12 @@
                             <div class="card-header flex-between border-b">
                                 <h3>Amazon Review Rating Distribution</h3>
                             </div>
-                            <div class="card-body relative" style="min-height: 250px;">
-                                <canvas id="chart-anomaly-dist"></canvas>
+                            <div class="card-body relative" style="padding:12px">
+                                <div class="chart-wrap">
+                                    <canvas id="chart-anomaly-dist"></canvas>
+                                </div>
                                 <div class="watermark" id="wm-dist">Awaiting verified dataset/API data</div>
-                                <div class="text-xs text-gray-400 mt-4 text-center" id="lbl-dist" style="display: none;">Representative sample of 100 real Amazon Electronics reviews</div>
+                                <div class="text-xs text-gray-400 mt-2 text-center" id="lbl-dist" style="display: none;">Representative sample of 100 real Amazon Electronics reviews</div>
                             </div>
                         </div>
                     </div>
@@ -152,8 +156,8 @@
                                 <h3>User/Product Graph Preview</h3>
                                 <span class="badge bg-neutral-light text-gray-500 border">Representative sample of real Amazon Electronics interactions</span>
                             </div>
-                            <div class="card-body flex-1 p-0 relative" style="min-height: 350px;">
-                                <div id="vis-network-overview" class="vis-container w-full h-full" style="height: 100%; width: 100%;"></div>
+                            <div class="card-body p-0" style="position:relative">
+                                <div id="vis-network-overview" style="width:100%;height:320px;"></div>
                                 <div class="watermark" id="wm-graph-overview">Awaiting verified dataset/API data</div>
                             </div>
                         </div>
@@ -272,8 +276,10 @@
                                 <span style="color:#ef4444">●</span> Anomalous &nbsp; <span style="color:#60a5fa">●</span> Normal &nbsp; <span style="color:#ef4444;border-bottom:1px dashed #ef4444">— —</span> Threshold
                             </span>
                         </div>
-                        <div style="padding:16px;height:340px;position:relative">
-                            <canvas id="chart-anomaly-timeseries" style="display:block"></canvas>
+                        <div style="padding:16px;position:relative">
+                            <div class="chart-wrap" style="height:320px">
+                                <canvas id="chart-anomaly-timeseries"></canvas>
+                            </div>
                         </div>
                     </div>
 
@@ -390,10 +396,10 @@
                                 <span class="legend-item"><span class="line anomalous"></span> Anomalous</span>
                             </div>
                         </div>
-                        <div class="card-body flex-1 p-0 relative" style="min-height: 500px;">
-                            <div id="vis-network" class="vis-container w-full h-full"></div>
+                        <div class="card-body p-0" style="position:relative">
+                            <div id="vis-network" style="width:100%;height:500px;"></div>
                             <div class="watermark bottom-right pointer-events-none" id="wm-graph">Data dynamically populated from live inference</div>
-                            <div class="absolute bottom-2 left-2 text-xs text-gray-400 bg-white p-1 rounded opacity-80" id="lbl-graph" style="display: none;">Representative sample of 100 real Amazon Electronics reviews (Plus live inferences)</div>
+                            <div style="position:absolute;bottom:8px;left:8px;font-size:11px;color:#6b7280;background:#fff;padding:3px 8px;border-radius:4px;opacity:0.85" id="lbl-graph">Representative sample of 100 real Amazon Electronics reviews (+ live inferences)</div>
                         </div>
                     </div>
                 </section>
@@ -432,7 +438,7 @@
                                         <h4>Temporal Decay Function</h4>
                                         <span class="badge bg-neutral-light text-gray-500 border">Learned τ = 0.431</span>
                                     </div>
-                                    <div class="relative w-full" style="height: 250px;">
+                                    <div class="chart-wrap" style="height:240px">
                                         <canvas id="chart-temporal-decay"></canvas>
                                     </div>
                                     <div class="text-xs text-gray-400 text-center mt-2">Mathematical decay curve w(Δt) = exp(-0.431 * Δt) across 14 days</div>
