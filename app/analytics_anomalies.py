@@ -38,7 +38,7 @@ def get_amazon_batch_anomalies():
     analyzed = []
     anomalous_count = 0
 
-    for data in interactions[:100]:
+    for data in interactions[:2000]:
         reviewer_id = data.get("reviewerID", "UNKNOWN")
         asin = data.get("asin", "UNKNOWN")
         unix_time = data.get("unixReviewTime", 0)

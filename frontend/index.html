@@ -144,7 +144,7 @@
                                     <canvas id="chart-anomaly-dist"></canvas>
                                 </div>
                                 <div class="watermark" id="wm-dist">Awaiting verified dataset/API data</div>
-                                <div class="text-xs text-gray-400 mt-2 text-center" id="lbl-dist" style="display: none;">Representative sample of 100 real Amazon Electronics reviews</div>
+                                <div class="text-xs text-gray-400 mt-2 text-center" id="lbl-dist" style="display: none;">Analysis of available dataset Amazon Electronics reviews</div>
                             </div>
                         </div>
                     </div>
@@ -399,7 +399,7 @@
                         <div class="card-body p-0" style="position:relative">
                             <div id="vis-network" style="width:100%;height:500px;"></div>
                             <div class="watermark bottom-right pointer-events-none" id="wm-graph">Data dynamically populated from live inference</div>
-                            <div style="position:absolute;bottom:8px;left:8px;font-size:11px;color:#6b7280;background:#fff;padding:3px 8px;border-radius:4px;opacity:0.85" id="lbl-graph">Representative sample of 100 real Amazon Electronics reviews (+ live inferences)</div>
+                            <div style="position:absolute;bottom:8px;left:8px;font-size:11px;color:#6b7280;background:#fff;padding:3px 8px;border-radius:4px;opacity:0.85" id="lbl-graph">Visualized subset of available dataset (max 500 nodes) for UI stability (+ live inferences)</div>
                         </div>
                     </div>
                 </section>
@@ -536,7 +536,7 @@
                                 </div>
                                 <div class="p-3 bg-gray-100 border-l-4 border-gray-400 rounded">
                                     <strong class="text-gray-800 block mb-1">Dashboard Visualization Sample</strong>
-                                    <span class="text-gray-600 text-xs">100 real Amazon Electronics reviews deterministically sampled to render UI graphs safely.</span>
+                                    <span class="text-gray-600 text-xs">Uses all available records for charts, with network graphs capped at 500 nodes to render UI safely.</span>
                                 </div>
                             </div>
                             

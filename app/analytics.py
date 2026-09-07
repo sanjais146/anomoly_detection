@@ -40,7 +40,7 @@ def get_amazon_analytics():
                     idx = min(int(rating) - 1, 4)
                     analytics["rating_distribution"][idx] += 1
                     
-                    if len(analytics["sample_graph"]) < 100:
+                    if len(analytics["sample_graph"]) < 500:
                         analytics["sample_graph"].append({
                             "reviewerID": data.get("reviewerID"),
                             "asin": data.get("asin"),
@@ -50,15 +50,20 @@ def get_amazon_analytics():
                 except:
                     pass
                     
-        # Calculate real timeline bins (Group by Year-Month or Day)
+        # Calculate real timeline bins (Group by Year-Month or Day) USING ALL DATA
         import datetime
         timeline_counts = {}
-        for edge in analytics["sample_graph"]:
-            t = edge.get("unixReviewTime", 0)
-            if t > 0:
-                # Format to YYYY-MM
-                date_str = datetime.datetime.fromtimestamp(t).strftime('%Y-%m')
-                timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
+        # NOTE: We now use the raw file directly for timeline rather than just the graph slice
+        with open(sample_file, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    data = ast.literal_eval(line)
+                    t = data.get("unixReviewTime", 0)
+                    if t > 0:
+                        date_str = datetime.datetime.fromtimestamp(t).strftime('%Y-%m')
+                        timeline_counts[date_str] = timeline_counts.get(date_str, 0) + 1
+                except:
+                    pass
         
         # Sort chronologically
         sorted_dates = sorted(timeline_counts.keys())
