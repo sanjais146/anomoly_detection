@@ -214,94 +214,137 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('aa-kpi-anomalous').innerText = data.kpi.anomalous_count;
                 document.getElementById('aa-kpi-rate').innerText = data.kpi.anomaly_rate + '%';
                 document.getElementById('aa-kpi-threshold').innerText = data.kpi.threshold;
+                
+                // Update extended KPIs if elements exist
+                if (document.getElementById('aa-kpi-normal')) {
+                    document.getElementById('aa-kpi-normal').innerText = data.kpi.normal_count;
+                }
+                if (document.getElementById('aa-kpi-avg-score')) {
+                    document.getElementById('aa-kpi-avg-score').innerText = data.kpi.avg_anomaly_score;
+                }
 
                 const timeSeriesLabels = [];
                 const timeSeriesData = [];
                 const pointColors = [];
+                const pointRadii = [];
                 
-                // Sort by probability descending for the table
+                // Populate Top Anomalous Interactions table (sorted by score descending)
                 const topAnomalies = [...data.time_series].sort((a, b) => b.anomaly_probability - a.anomaly_probability);
                 const tbody = document.getElementById('aa-table-tbody');
                 tbody.innerHTML = '';
                 
                 topAnomalies.forEach(inf => {
-                    const dt = new Date(inf.unixReviewTime * 1000).toLocaleString();
-                    const statusHtml = inf.is_anomalous 
-                        ? `<span class="badge bg-red-500">ANOMALY</span>` 
-                        : `<span class="badge bg-gray-700">NORMAL</span>`;
-                        
-                    const rowClass = inf.is_anomalous ? "bg-red-900 bg-opacity-20" : "";
+                    const dt = new Date(inf.unixReviewTime * 1000).toLocaleDateString();
+                    const anomalyScore = (inf.anomaly_probability || 0).toFixed(4);
+                    const thresholdVal = data.kpi.threshold;
+                    const statusBadge = inf.is_anomalous 
+                        ? `<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ANOMALY</span>` 
+                        : `<span style="background:#374151;color:#9ca3af;padding:2px 8px;border-radius:4px;font-size:11px">NORMAL</span>`;
+                    const scoreColor = inf.is_anomalous ? '#ef4444' : '#22c55e';
+                    const rowBg = inf.is_anomalous ? 'rgba(239,68,68,0.08)' : 'transparent';
                         
                     tbody.innerHTML += `
-                        <tr class="${rowClass}">
-                            <td class="text-xs text-gray-400">${dt}</td>
-                            <td class="font-mono text-xs">${inf.reviewerID}</td>
-                            <td class="font-mono text-xs">${inf.asin}</td>
-                            <td>${inf.rating} <i class="fa-solid fa-star text-yellow-500 text-xs"></i></td>
-                            <td class="font-mono font-bold ${inf.is_anomalous ? 'text-red-500' : 'text-green-500'}">${inf.anomaly_probability.toFixed(3)}</td>
-                            <td>${statusHtml}</td>
+                        <tr style="background:${rowBg}">
+                            <td style="color:#9ca3af;font-size:12px">${dt}</td>
+                            <td style="font-family:monospace;font-size:11px;color:#e5e7eb">${inf.reviewerID}</td>
+                            <td style="font-family:monospace;font-size:11px;color:#e5e7eb">${inf.asin}</td>
+                            <td style="color:#e5e7eb">${inf.rating} ★</td>
+                            <td style="font-family:monospace;font-weight:bold;color:${scoreColor}">${anomalyScore}</td>
+                            <td>${statusBadge}</td>
                         </tr>
                     `;
                 });
 
+                // Build time-series data (sorted chronologically)
                 data.time_series.sort((a, b) => a.unixReviewTime - b.unixReviewTime).forEach(inf => {
                     timeSeriesLabels.push(new Date(inf.unixReviewTime * 1000).toLocaleDateString());
                     timeSeriesData.push(inf.anomaly_probability);
                     pointColors.push(inf.is_anomalous ? '#ef4444' : '#60a5fa');
+                    pointRadii.push(inf.is_anomalous ? 6 : 4);
                 });
 
-                const ctx = document.getElementById('chart-anomaly-timeseries');
-                if (ctx) {
-                    new Chart(ctx, {
+                const ctxEl = document.getElementById('chart-anomaly-timeseries');
+                if (ctxEl) {
+                    // Set explicit white-ish background for canvas so it's visible on dark parent
+                    ctxEl.style.backgroundColor = 'transparent';
+                    
+                    new Chart(ctxEl, {
                         type: 'line',
                         data: {
                             labels: timeSeriesLabels,
                             datasets: [{
                                 label: 'Anomaly Probability',
                                 data: timeSeriesData,
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'transparent',
+                                borderColor: '#60a5fa',
+                                backgroundColor: 'rgba(96,165,250,0.08)',
                                 borderWidth: 2,
                                 pointBackgroundColor: pointColors,
                                 pointBorderColor: pointColors,
-                                pointRadius: 4,
-                                tension: 0.1
+                                pointRadius: pointRadii,
+                                pointHoverRadius: 8,
+                                tension: 0.3,
+                                fill: true
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            animation: { duration: 800 },
                             plugins: {
                                 legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: '#1f2937',
+                                    titleColor: '#f9fafb',
+                                    bodyColor: '#9ca3af',
+                                    callbacks: {
+                                        label: (ctx) => {
+                                            const idx = ctx.dataIndex;
+                                            const item = data.time_series.sort((a,b)=>a.unixReviewTime-b.unixReviewTime)[idx];
+                                            if (!item) return '';
+                                            const verdict = item.is_anomalous ? 'ANOMALY' : 'NORMAL';
+                                            return [
+                                                'Score: ' + (item.anomaly_probability || 0).toFixed(4),
+                                                'Decision: ' + verdict,
+                                                'Threshold: ' + data.kpi.threshold,
+                                                'Reviewer: ' + (item.reviewerID || '')
+                                            ];
+                                        }
+                                    }
+                                },
                                 annotation: {
                                     annotations: {
-                                        line1: {
+                                        thresholdLine: {
                                             type: 'line',
                                             yMin: data.kpi.threshold,
                                             yMax: data.kpi.threshold,
-                                            borderColor: '#ef4444',
-                                            borderWidth: 1,
-                                            borderDash: [5, 5],
+                                            borderColor: 'rgba(239,68,68,0.8)',
+                                            borderWidth: 2,
+                                            borderDash: [6, 4],
                                             label: {
                                                 display: true,
                                                 content: 'Threshold ' + data.kpi.threshold,
                                                 position: 'end',
-                                                backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                                                backgroundColor: 'rgba(239,68,68,0.85)',
+                                                color: '#fff',
+                                                font: { size: 11 },
+                                                padding: { x: 6, y: 4 }
                                             }
                                         }
                                     }
                                 }
                             },
                             scales: {
-                                y: { 
-                                    beginAtZero: true, 
-                                    max: 1.0, 
-                                    grid: { color: '#374151' },
-                                    ticks: { color: '#9ca3af' }
+                                y: {
+                                    min: 0.3,
+                                    max: 1.0,
+                                    grid: { color: 'rgba(255,255,255,0.06)' },
+                                    ticks: { color: '#9ca3af', font: { size: 11 } },
+                                    title: { display: true, text: 'Anomaly Probability', color: '#6b7280' }
                                 },
-                                x: { 
-                                    grid: { color: '#374151', display: false },
-                                    ticks: { color: '#9ca3af', maxTicksLimit: 10 }
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: '#9ca3af', maxTicksLimit: 12, font: { size: 10 } },
+                                    title: { display: true, text: 'Review Date', color: '#6b7280' }
                                 }
                             }
                         }
