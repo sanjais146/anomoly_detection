@@ -272,10 +272,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const ctxEl = document.getElementById('chart-anomaly-timeseries');
                 if (ctxEl) {
-                    // Set explicit white-ish background for canvas so it's visible on dark parent
                     ctxEl.style.backgroundColor = 'transparent';
                     
-                    new Chart(ctxEl, {
+                    const validScores = timeSeriesData.map(Number).filter(Number.isFinite);
+                    if (!validScores.length) {
+                        console.error("No valid numeric scores for anomaly chart.");
+                        return;
+                    }
+                    
+                    if (window.anomalyTimeseriesChart) {
+                        window.anomalyTimeseriesChart.destroy();
+                    }
+                    
+                    const minScore = Math.min(...validScores);
+                    const maxScore = Math.max(...validScores);
+                    const padding = Math.max((maxScore - minScore) * 0.15, 0.02);
+
+                    window.anomalyTimeseriesChart = new Chart(ctxEl, {
                         type: 'line',
                         data: {
                             labels: timeSeriesLabels,
@@ -342,8 +355,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             },
                             scales: {
                                 y: {
-                                    min: 0.3,
-                                    max: 1.0,
+                                    min: Math.max(0, minScore - padding),
+                                    max: Math.min(1.05, maxScore + padding),
                                     grid: { color: 'rgba(255,255,255,0.06)' },
                                     ticks: { color: '#9ca3af', font: { size: 11 } },
                                     title: { display: true, text: 'Anomaly Probability', color: '#6b7280' }
