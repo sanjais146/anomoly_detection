@@ -1,50 +1,47 @@
-# Viva Preparation & Explanations
+# Viva Explanations & Defenses
 
-## 1. What is an e-commerce anomaly?
-In the context of our Amazon implementation, an anomaly is a highly improbable interaction (a review) between a User and a Product, given their historical temporal graph behavior. It captures potential spam, review bombing, or hijacked accounts where the topological context contradicts the interaction.
+This document provides structured answers for the final project viva.
 
-## 2. Why Amazon?
-The Amazon Electronics review graph is a widely recognized standard in academic literature (e.g., GNN-EADD). It provides dense, chronological interactions (Users reviewing Products) critical for demonstrating the capabilities of Temporal Graph Attention Networks in a real-world e-commerce setting.
+## Elevator Pitches
 
-## 3. Why TGAT?
-Temporal Graph Attention Networks (TGAT) naturally model the continuous-time dynamic nature of e-commerce interactions. Unlike static graphs or tabular models, TGAT computes embeddings that dynamically evolve, aggregating neighborhood features while applying causal temporal decay to prioritize recent activity.
+### 30 Seconds: What is the project?
+"This project is an E-Commerce Anomaly Detection system. Instead of relying on static rules, it uses a Temporal Graph Attention Network (TGAT) to analyze the evolving bipartite graph of user-product interactions—specifically Amazon reviews. The system mathematically flags interactions that are topologically unexpected given the causal history of the entities involved."
 
-## 4. What are the graph nodes and edges?
-- **Nodes**: Users (`reviewerID`) and Products (`asin`).
-- **Edges**: Interactions (Reviews). Features include the timestamp, the rating (`overall`), and the helpfulness ratio.
+### 1 Minute: How does TGAT detect anomalies?
+"TGAT treats the e-commerce platform as a massive network. When a new interaction occurs between a user and a product, TGAT looks at their strictly prior historical neighborhoods. It applies a learned continuous-time exponential decay so recent events matter more than old ones. It creates temporal embeddings for both the user and product, and takes their dot product. If the dot product is high, the link was expected. If it's extremely low, the link contradicts the historical graph structure, and we flag it as an anomaly—such as a compromised account or review bombing."
 
-## 5. What is temporal attention?
-Temporal attention is a mechanism where the model learns to weight historical neighbors based not just on topological similarity, but on time. We implement an exponential decay function `w = exp(-τ * Δt)`, where `τ` is learned via backpropagation, to gracefully forget older interactions.
+### 2 Minutes: Explain the graph and temporal architecture.
+"The core architecture is a `HybridAmazonModel` in PyTorch. The graph is bipartite: Users and Products. The edges are time-stamped interactions. 
+To process this, our `CausalAmazonEncoder` enforces strict causal masking—meaning it absolutely prevents the model from looking at future or simultaneous edges to avoid data leakage. 
+For the edges it is allowed to see, it applies a decay factor $\tau$, which the model learned during training. For Amazon Electronics, the network learned a half-life of about 1.6 days, meaning e-commerce structures change rapidly. Finally, the network aggregates these temporal weights to form a context vector, which is used to score the probability of the new interaction."
 
-## 6. What is the anomaly score?
-The anomaly score is the **contrastive link reconstruction error**. The model predicts the probability of an interaction occurring. High probability (high similarity between temporal embeddings) = genuine interaction. Low probability = anomalous interaction. We score it as `1.0 - probability`.
+### 5 Minutes: System Overview
+*(Combine the 2-minute pitch with the following)*
+"The complete system goes from raw data to live dashboard. We trained the TGAT on a 20,000-interaction Amazon Electronics graph using a contrastive link prediction objective. 
+In deployment, we serve the frozen PyTorch checkpoint via a FastAPI backend. For the demonstration, we use a cold-start batch mode on a representative 100-record sample to demonstrate the inference pipeline live. 
+The dashboard itself is a modern, Vercel-inspired command center built with Chart.js and Vis.js, connecting directly to the API to visualize the score distributions, temporal decay curves, and the anomalous interactions. We also retain our earlier static CatBoost experiments on the IEEE-CIS dataset as a historical supervised baseline, demonstrating the evolution of our research from static classification to temporal graph anomaly detection."
 
-## 7. How are anomalies labeled?
-The raw Amazon dataset lacks explicit "fraud" labels. Therefore, we utilize **self-supervised link prediction**. Genuine interactions act as positives, and synthetically generated counterfactual edges (interactions that never occurred) are injected as anomalies during evaluation.
+---
 
-## 8. How do you prevent leakage?
-We enforce a strict **causal protocol**.
-1. **Chronological Splitting:** The data is sorted by timestamp before splitting into Train (70%), Val (15%), and Test (15%).
-2. **Causal Masking:** When evaluating an interaction at time `t`, the TGAT aggregator strictly masks out any neighbor interactions where `t_hist >= t`.
+## Hostile Questions & Defenses
 
-## 9. How was the threshold selected?
-The threshold (0.52) was selected dynamically on the validation set by maximizing the F1 score across a linear sweep of possible threshold values.
+**Q: Why TGAT? Why not just use a simpler model like Random Forest or CatBoost?**
+A: "We actually *did* use CatBoost (our E10 benchmark) for supervised fraud classification on the IEEE-CIS dataset, achieving 62.25% F1. However, static models ignore the rich, evolving structural topology of e-commerce. Fraud and anomalies in e-commerce—like review rings or account takeovers—are inherently relational and temporal. TGAT naturally models these structural dynamics via temporal neighborhoods, which tabular models cannot do natively."
 
-## 10. What is the 77.01% result?
-It is the Test F1 score achieved by the TGAT model on the Amazon Electronics graph distinguishing genuine, chronologically valid interactions from synthetically injected anomalous interactions, strictly without seeing future edges.
+**Q: What exactly is an anomaly in your system?**
+A: "An anomaly is mathematically defined as a topologically unexpected user-product link. It is scored as $1 - \sigma(E_u \cdot E_p)$. If the model's understanding of the user's history and the product's history strongly suggests they shouldn't interact, but they do, the score approaches 1.0."
 
-## 11. Is it comparable to GNN-EADD? Why not claim that you beat the paper?
-No, it is not directly comparable. GNN-EADD utilizes a transductive protocol (the graph structure is fully known, labels are masked) often combined with external heuristic spam labels. Our implementation uses a strict causal, inductive protocol (no future edges visible) evaluating link reconstruction error. Claiming we "beat" it would be scientifically dishonest; we simply demonstrate high efficacy (77.01%) under our more stringent temporal constraints.
+**Q: Why use Amazon Electronics? Why not IEEE-CIS for everything?**
+A: "IEEE-CIS is excellent for supervised classification because it has explicit `isFraud` labels, but its graph structure must be synthetically inferred (e.g., matching Card IDs) and its timestamps are masked `TimeDeltas`. Amazon Electronics provides a genuine bipartite graph (User -> Product) with real Unix timestamps, making it scientifically far superior for training and evaluating a Temporal Graph Attention Network. Since Amazon lacks explicit fraud labels, we properly framed the final TGAT pipeline as unsupervised anomaly detection."
 
-## 12. Why does IEEE-CIS still exist? What is E10?
-The IEEE-CIS Transaction Fraud project was our original parallel baseline. **E10** is our static causal CatBoost ensemble trained on 508 tabular features, which achieved 62.25% Test F1. It is preserved because it represents a complete, rigorously evaluated supervised fraud detection baseline utilizing a simulated 7-day chargeback delay protocol.
+**Q: How is the threshold chosen? Are you just hacking the numbers to look good?**
+A: "No. The threshold is strictly documented. In full training graph evaluation, the threshold was calibrated to 0.52 to separate positive links from corrupted negative links. In our live dashboard, which operates in a 'cold-start' demo mode without caching the entire historical graph in memory, the base score distribution shifts upward. To maintain a scientifically honest demonstration, we empirically calibrated the demo threshold to 0.6668 (the 75th percentile of the demo distribution) and explicitly labeled it as such in the UI. We do not conflate the two."
 
-## 13. How does the live demo work?
-The FastAPI backend receives an interaction request (`reviewerID`, `asin`, timestamp). The `amazon_predictor.py` proxies the node embeddings through the frozen TGAT checkpoint (`amazon_tgat.pt`), calculates the temporal decay and contrastive similarity, and returns the anomaly probability to the frontend dashboard.
+**Q: How do you prevent temporal leakage?**
+A: "We enforce strict causal masking in the `CausalAmazonEncoder`. The condition `edge_times < target_time` is mathematically enforced during tensor operations. Simultaneous or future interactions are multiplied by zero before aggregation. The UI proudly displays '0.00% Future Leakage' because it is enforced at the PyTorch level."
 
-## 14. Why Google Colab and ngrok?
-Google Colab provides a reproducible, cloud-based, GPU-capable Linux environment, bypassing local dependency hell. `ngrok` bridges the Colab runtime to a public URL, allowing the dashboard to be presented seamlessly to external evaluators or users without complicated network routing.
+**Q: Why is the E10 62.25% result not called a TGAT score?**
+A: "Because that would be scientifically dishonest. The 62.25% F1 belongs to our historical static CatBoost ensemble applied to the IEEE-CIS dataset. TGAT operates on Amazon Electronics as an unsupervised anomaly detector. The final system explicitly separates the Primary Final System (Amazon TGAT) from Historical Supporting Research (IEEE-CIS E10)."
 
-## 15. What are the limitations?
-1. The anomaly definition relies on link reconstruction rather than ground-truth financial fraud labels (due to dataset limitations).
-2. For latency reasons, the live demo approximates node embeddings rather than querying a live graph database (like Neo4j) to dynamically retrieve large ego-networks in real-time.
+**Q: Where are the limitations of your system?**
+A: "The primary limitation is temporal resolution. Amazon datasets generally provide timestamps at a daily resolution (00:00:00). We cannot infer sub-day causality. Secondly, our live demo currently operates in cold-start mode, using deterministic node features rather than querying a live massive graph database, which would be required for a full production deployment."

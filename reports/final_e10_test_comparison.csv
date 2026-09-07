@@ -1,0 +1,6 @@
+Model,Test_F1,Notes
+Clean XGBoost Baseline,0.4969,Standard base features
+E6 7-Day Delayed CatBoost,0.5648,Causal baseline
+Invalid E2-B CatBoost,0.6922,0-day leakage (INVALID)
+External GNN-EADD,0.73,Published benchmark
+E10 Final Ensemble,0.6225552915371961,Valid 7-day causal ensemble

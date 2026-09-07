@@ -1,0 +1,7 @@
+Model,Test_F1,Notes
+Original XGBoost,0.4969,"Strict causal, 31 features"
+Original Hybrid T-GAT,0.4999,Strict causal
+E2-B CatBoost,0.6922,0-day transductive leakage across Val/Test
+E5 Strict Inductive CatBoost,N/A,Val F1 57.05%. Frozen labels
+E6 7-Day Delayed-Induction CatBoost,0.5648457822370866,7-day delayed rolling labels
+GNN-EADD (Reported),0.73,Reported benchmark. Suspected transductive leakage.

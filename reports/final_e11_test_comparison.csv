@@ -1,0 +1,5 @@
+Model,Test_F1,Notes
+Clean XGBoost Baseline,0.4969,Static
+E10 Static Ensemble,0.6225,Authoritative Static
+External GNN-EADD,0.73,Published benchmark
+E12 Continual E11-B,0.6118456801304112,Weekly Retraining

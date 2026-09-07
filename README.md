@@ -1,78 +1,67 @@
-# Amazon E-Commerce Anomaly Detection using TGAT
+# E-Commerce Anomaly Detection using Temporal Graph Attention Networks
 
-This repository contains the official implementation for the **Amazon E-Commerce Anomaly Detection** project, utilizing Temporal Graph Attention Networks (TGAT) to identify anomalous behaviors in e-commerce review graphs.
+**Status:** Final Master Deployment
+**Primary Model:** PyTorch TGAT (`HybridAmazonModel`)
+**Primary Dataset:** Amazon Electronics
 
-## 1. Primary Implementation: Amazon TGAT
-
-The primary system models the **Amazon Electronics** dataset as a heterogeneous temporal graph (User → Reviews → Product). Because raw Amazon review datasets lack explicit ground-truth "fraud" labels, we evaluate anomalies via **self-supervised link prediction**.
-
-### Architecture
-- **Nodes:** Amazon Users (`reviewerID`) and Products (`asin`).
-- **Edges:** Interaction events (Reviews) containing timestamps and ratings.
-- **Model:** `HybridAmazonModel` with `CausalAmazonEncoder`.
-- **Temporal Modeling:** Strictly causal (`t_hist < t_target`). Edge influence decays exponentially based on a learned parameter `τ`.
-- **Anomaly Scoring:** Contrastive link reconstruction error. Highly improbable edges (low cosine similarity) are flagged as anomalies.
-
-### Evaluation & Results (Amazon Dataset)
-The dataset is split chronologically (70% Train, 15% Val, 15% Test) to prevent future data leakage. Synthetic unobserved edges are injected as negative "anomalous" samples for evaluation.
-
-- **Test F1 Score:** 77.01%
-- **Test AUROC:** 0.7997
-- **Test Precision:** 71.83%
-- **Test Recall:** 83.00%
-
-*Note on Benchmarks:* The GNN-EADD paper reports ~73% on Amazon datasets using transductive protocols with external spam labels. Our 77.01% result is obtained under a strictly causal, inductive link-prediction protocol. While not directly comparable, it proves the efficacy of causal temporal attention on this dataset.
+This repository contains the complete, executable pipeline for **E-Commerce Anomaly Detection**. The project utilizes Temporal Graph Attention Networks (TGAT) to model the evolving topology of user-product interactions, successfully identifying structurally unexpected (anomalous) links without relying on static rules or fabricated fraud labels.
 
 ---
 
-## 2. Historical Baseline: IEEE-CIS Transaction Fraud
+## 1. System Architecture (The Amazon TGAT Pipeline)
 
-To maintain a comprehensive record of our research, the previous **IEEE-CIS Transaction Fraud Detection** system is preserved as a separate baseline track.
+The final system models **Amazon Electronics** interactions as a bipartite temporal graph (Users → Reviews → Products). 
 
-- **Architecture:** E10 Static Causal CatBoost Ensemble (508-dimensional feature space).
-- **Causal Protocol:** 7-day label availability boundary (simulating chargeback delay).
-- **Test F1 Score:** 62.25% (Frozen and verified).
+### How it Works
+- **Graph Construction:** Reviewer IDs and Product ASINs become nodes. The reviews are time-stamped edges.
+- **Causal Masking:** The `CausalAmazonEncoder` ensures that when evaluating an interaction at time $t$, only strictly prior historical interactions ($t_{hist} < t$) are aggregated. Future leakage is mathematically prevented.
+- **Temporal Decay:** The network independently learned a decay parameter $\tau = 0.431$ (half-life ≈ 1.6 days), dynamically down-weighting older interactions.
+- **Anomaly Scoring:** The model attempts to reconstruct the link. The anomaly score is $1 - \sigma(E_u \cdot E_p)$. If the topological history strongly suggests the user and product should not interact, the score is high (Anomaly). 
+
+### Live Dashboard & API
+The system is deployed as a live **FastAPI** backend powering a dense, dark-mode **Vercel-inspired Analytics Command Center**. The dashboard executes real-time inference through the frozen PyTorch checkpoint (`models/amazon_tgat.pt`).
 
 ---
 
-## 3. Project Structure
+## 2. Historical Research Context (IEEE-CIS Benchmark)
 
-```
-├── app/
-│   ├── main.py                 # FastAPI application (Amazon & IEEE endpoints)
-│   ├── amazon_predictor.py     # Inference adapter for Amazon TGAT
-│   └── predictor.py            # Inference adapter for E10 baseline
-├── src/
-│   ├── train_amazon_tgat.py    # Training script for Amazon TGAT
-│   └── models/
-│       ├── amazon_contrastive_tgat.py
-│       └── tgat_final.py
-├── pipeline/
-│   └── features/
-│       └── amazon_graph_builder.py
-├── frontend/
-│   └── index.html              # E-Commerce Anomaly Detection Dashboard
-├── models/
-│   └── amazon_tgat.pt          # Frozen Amazon TGAT Checkpoint
-└── reports/
-    ├── amazon_tgat_analysis.md # Amazon performance report
-    └── amazon_gnneadd_protocol.md # Base paper methodology comparison
-```
+To maintain scientific integrity and provide context, we preserve our prior research on the **IEEE-CIS Transaction Fraud Detection** dataset. 
 
-## 4. Live Dashboard & API Deployment
+- **Task:** Supervised Fraud Classification (`isFraud`).
+- **Model:** E10 Static Causal CatBoost Ensemble.
+- **Result:** **62.25% Test F1**
 
-The project features a full research-grade dashboard displaying the Amazon graph architecture, live TGAT inference, and comparative metrics.
+**Important Distinction:** The 62.25% F1 is a historical supervised fraud classification benchmark. It is *not* the score of the unsupervised Amazon TGAT anomaly detector. The systems are explicitly separated to prevent dataset and metric conflation.
 
-### Running Locally
-```bash
-pip install -r requirements.txt
-python app/main.py
-```
-Visit `http://127.0.0.1:8000` to view the Command Center dashboard.
+---
 
-### Google Colab Deployment
-A completely self-contained deployment notebook is provided in `colab/run_demo.ipynb`. It will automatically:
-1. Clone this repository.
-2. Pull the frozen `.pt` and `.cbm` models via Git LFS.
-3. Start the FastAPI backend.
-4. Expose the dashboard globally using `ngrok`.
+## 3. Deployment (Google Colab / Live Demo)
+
+The entire system is designed to be deployed and demonstrated with a single click via Google Colab.
+
+### Quick Start
+1. Open [`colab/run_demo.ipynb`](colab/run_demo.ipynb) in Google Colab.
+2. In the Colab Secrets panel, add your free ngrok token: `Name: NGROK_AUTHTOKEN`.
+3. Click **Runtime > Run all**.
+
+The notebook will pull the repository, load the LFS model binaries, launch the FastAPI server, and provide a public ngrok URL to access the live dashboard.
+
+---
+
+## 4. Documentation & Audits
+
+Comprehensive final audits and reports are located in the `reports/` and `docs/` directories:
+- **`reports/master_project_consistency_audit.md`** - Answers all dataset, identity, and artifact questions.
+- **`reports/final_dataset_decision.md`** - Justification for Amazon Electronics.
+- **`reports/final_anomaly_definition.md`** - Mathematical definition of the anomaly score.
+- **`reports/final_tgat_audit.md`** - Checkpoint and model architecture audit.
+- **`reports/final_system_acceptance_audit.md`** - Final PASS/FAIL matrix.
+- **`docs/viva_explanations.md`** - Explanations and defenses for the final viva.
+- **`docs/final_demo_script.md`** - Step-by-step instructions for demonstrating the live system.
+
+---
+
+## 5. Security & Scientific Integrity
+- **No Fabricated Data:** The dashboard visualizes a real 100-record sample of Amazon Electronics. No synthetic interactions, fake users, or random math functions are used.
+- **Verified Execution:** Every anomaly score in the UI is generated by a live tensor pass through `models/amazon_tgat.pt`.
+- **No Secrets:** No Ngrok tokens, GitHub PATs, or API keys are committed to this repository.
