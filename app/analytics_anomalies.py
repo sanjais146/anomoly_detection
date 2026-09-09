@@ -12,65 +12,67 @@ root-cause explanation.
 import json
 import ast
 import os
-from app.amazon_predictor import amazon_demo_inference, DEMO_BATCH_THRESHOLD, TRAINING_THRESHOLD
+import time
+from app.amazon_predictor import amazon_demo_inference_batch, DEMO_BATCH_THRESHOLD, TRAINING_THRESHOLD
 
 
-def get_amazon_batch_anomalies():
+def get_amazon_batch_anomalies(max_records=100000):
     sample_file = "data/amazon/raw/sample_reviews.json"
 
-    # Use calibrated demo-mode threshold, NOT the raw training threshold
     threshold = DEMO_BATCH_THRESHOLD
     threshold_source = (
         "Demo-mode calibration: 75th-percentile of cold-start score distribution "
-        f"(seed=42, n=100; training threshold={TRAINING_THRESHOLD} not applicable in cold-start mode)"
+        f"(seed=42, n=100; training threshold={TRAINING_THRESHOLD})"
     )
 
-    interactions = []
+    total_analyzed = 0
+    anomalous_count = 0
+    sum_score = 0.0
+    
+    # Store limited subsets for UI to prevent browser crash
+    ui_timeseries = []
+    ui_top_anomalies = []
+    
+    start_time = time.time()
+    
     if os.path.exists(sample_file):
         with open(sample_file, "r", encoding="utf-8") as f:
+            chunk = []
+            chunk_size = 500
+            
             for line in f:
+                if total_analyzed >= max_records:
+                    break
                 try:
                     data = ast.literal_eval(line)
-                    interactions.append(data)
-                except Exception:
+                    chunk.append({
+                        "reviewerID": data.get("reviewerID", "UNKNOWN"),
+                        "asin": data.get("asin", "UNKNOWN"),
+                        "unixReviewTime": data.get("unixReviewTime", 0),
+                        "overall": float(data.get("overall", 5.0))
+                    })
+                except (SyntaxError, ValueError):
                     pass
+                
+                if len(chunk) >= chunk_size:
+                    _process_chunk(chunk, threshold, ui_timeseries, ui_top_anomalies)
+                    total_analyzed += len(chunk)
+                    sum_score += sum(res["anomaly_probability"] for res in ui_timeseries[-len(chunk):] if "anomaly_probability" in res)
+                    anomalous_count += sum(1 for res in ui_timeseries[-len(chunk):] if res.get("is_anomalous"))
+                    chunk = []
+            
+            # Process remaining
+            if chunk:
+                _process_chunk(chunk, threshold, ui_timeseries, ui_top_anomalies)
+                total_analyzed += len(chunk)
+                sum_score += sum(res["anomaly_probability"] for res in ui_timeseries[-len(chunk):] if "anomaly_probability" in res)
+                anomalous_count += sum(1 for res in ui_timeseries[-len(chunk):] if res.get("is_anomalous"))
 
-    analyzed = []
-    anomalous_count = 0
-
-    for data in interactions[:2000]:
-        reviewer_id = data.get("reviewerID", "UNKNOWN")
-        asin = data.get("asin", "UNKNOWN")
-        unix_time = data.get("unixReviewTime", 0)
-        rating = float(data.get("overall", 5.0))
-
-        inf = amazon_demo_inference({
-            "reviewerID": reviewer_id,
-            "asin": asin,
-            "unixReviewTime": unix_time,
-            "overall": rating
-        })
-
-        prob = inf.get("anomaly_probability", 0.0) or 0.0
-        is_anomalous = prob >= threshold
-        if is_anomalous:
-            anomalous_count += 1
-
-        analyzed.append({
-            "reviewerID": reviewer_id,
-            "asin": asin,
-            "unixReviewTime": unix_time,
-            "rating": rating,
-            "anomaly_probability": round(prob, 4),
-            "similarity_score": inf.get("similarity_score", 0.0),
-            "is_anomalous": is_anomalous,
-            "risk_level": inf.get("risk_level", "LOW")
-        })
-
-    analyzed.sort(key=lambda x: x["unixReviewTime"])
-
-    normal_count = len(analyzed) - anomalous_count
-    avg_score = round(sum(r["anomaly_probability"] for r in analyzed) / max(1, len(analyzed)), 4)
+    elapsed = time.time() - start_time
+    
+    # Sort for UI
+    ui_timeseries.sort(key=lambda x: x["unixReviewTime"])
+    ui_top_anomalies.sort(key=lambda x: x["anomaly_probability"], reverse=True)
 
     return {
         "status": "success",
@@ -85,12 +87,34 @@ def get_amazon_batch_anomalies():
             "training_threshold": TRAINING_THRESHOLD
         },
         "kpi": {
-            "total_analyzed": len(analyzed),
+            "total_analyzed": total_analyzed,
             "anomalous_count": anomalous_count,
-            "normal_count": normal_count,
-            "anomaly_rate": round(anomalous_count / max(1, len(analyzed)) * 100, 2),
+            "normal_count": total_analyzed - anomalous_count,
+            "anomaly_rate": round(anomalous_count / max(1, total_analyzed) * 100, 2) if total_analyzed > 0 else 0,
             "threshold": round(threshold, 4),
-            "avg_anomaly_score": avg_score
+            "avg_anomaly_score": round(sum_score / max(1, total_analyzed), 4),
+            "processing_time_sec": round(elapsed, 2)
         },
-        "time_series": analyzed
+        "time_series": ui_timeseries[:2000],
+        "top_anomalies": ui_top_anomalies[:20]
     }
+
+def _process_chunk(chunk, threshold, ui_timeseries, ui_top_anomalies):
+    results = amazon_demo_inference_batch(chunk)
+    for i, res in enumerate(results):
+        prob = res.get("anomaly_probability", 0.0) or 0.0
+        is_anom = prob >= threshold
+        item = {
+            "reviewerID": chunk[i]["reviewerID"],
+            "asin": chunk[i]["asin"],
+            "unixReviewTime": chunk[i]["unixReviewTime"],
+            "rating": chunk[i]["overall"],
+            "anomaly_probability": prob,
+            "similarity_score": res.get("similarity_score", 0.0),
+            "is_anomalous": is_anom,
+            "risk_level": res.get("risk_level", "LOW")
+        }
+        if len(ui_timeseries) < 2000:
+            ui_timeseries.append(item)
+        if is_anom:
+            ui_top_anomalies.append(item)

@@ -82,66 +82,85 @@ def get_amazon_predictor():
         return None
 
 
+import hashlib
+
+def get_deterministic_id(raw_id: str, max_val: int = 10000) -> int:
+    return int(hashlib.md5(raw_id.encode('utf-8')).hexdigest(), 16) % max_val
+
 def amazon_demo_inference(tx_data: dict) -> dict:
     """
-    Run Amazon TGAT inference in cold-start demo mode.
-    Uses deterministic fixed-seed node features with empty edge_index.
-    Scores are comparable across invocations but DO NOT reflect a real graph neighborhood.
-    See module docstring for threshold calibration details.
+    Run Amazon TGAT inference for a single interaction.
+    """
+    results = amazon_demo_inference_batch([tx_data])
+    if results and "amazon_tgat_enabled" in results[0]:
+        return results[0]
+    return {}
+
+def amazon_demo_inference_batch(tx_data_list: list) -> list:
+    """
+    Run Amazon TGAT inference in cold-start demo mode for a batch of interactions.
     """
     model = get_amazon_predictor()
 
-    if model is None:
-        return {
+    if model is None or not tx_data_list:
+        return [{
             "amazon_tgat_enabled": False,
             "anomaly_probability": None,
             "temporal_context": "Amazon TGAT checkpoint unavailable",
             "note": "Amazon TGAT module disabled."
-        }
+        }] * max(1, len(tx_data_list))
 
-    u_raw = str(tx_data.get('reviewerID', 'A1234'))
-    p_raw = str(tx_data.get('asin', 'B000123'))
-    t_raw = float(tx_data.get('unixReviewTime', time.time()))
+    # Deterministic mapping instead of built-in hash()
+    u_idx_list = [get_deterministic_id(str(tx.get('reviewerID', 'A1234'))) for tx in tx_data_list]
+    p_idx_list = [get_deterministic_id(str(tx.get('asin', 'B000123'))) for tx in tx_data_list]
+    t_list = [float(tx.get('unixReviewTime', time.time())) for tx in tx_data_list]
 
-    u_idx = torch.tensor([hash(u_raw) % 10000], dtype=torch.long).to(_device)
-    p_idx = torch.tensor([hash(p_raw) % 10000], dtype=torch.long).to(_device)
-    t_target = torch.tensor([t_raw], dtype=torch.float).to(_device)
+    u_idx = torch.tensor(u_idx_list, dtype=torch.long).to(_device)
+    p_idx = torch.tensor(p_idx_list, dtype=torch.long).to(_device)
+    t_target = torch.tensor(t_list, dtype=torch.float).to(_device)
 
     with torch.no_grad():
         scores, u_emb, p_emb = model(u_idx, p_idx, t_target, _edge_index, _edge_attr, _u_x, _p_x)
 
-        # High dot product → highly expected link → low anomaly probability
-        similarity = torch.sigmoid(scores).item()
-        anomaly_prob = 1.0 - similarity
+        # High dot product -> highly expected link -> low anomaly probability
+        similarities = torch.sigmoid(scores).cpu().numpy()
+        anomaly_probs = 1.0 - similarities
 
         tau_u = float(torch.nn.functional.softplus(model.encoder.raw_tau_user).item() + 1e-5)
         tau_p = float(torch.nn.functional.softplus(model.encoder.raw_tau_prod).item() + 1e-5)
         hl_u = float(np.log(2) / max(tau_u, 1e-6))
         hl_p = float(np.log(2) / max(tau_p, 1e-6))
 
-    # Use DEMO_BATCH_THRESHOLD for the per-interaction live-predict endpoint
     demo_threshold = DEMO_BATCH_THRESHOLD
-    is_anomalous = anomaly_prob >= demo_threshold
-    prediction = "anomalous" if is_anomalous else "normal"
-    risk_level = "HIGH" if anomaly_prob >= 0.75 else ("MEDIUM" if anomaly_prob >= demo_threshold else "LOW")
+    
+    results = []
+    for i in range(len(tx_data_list)):
+        anomaly_prob = float(anomaly_probs[i])
+        similarity = float(similarities[i])
+        is_anomalous = anomaly_prob >= demo_threshold
+        prediction = "anomalous" if is_anomalous else "normal"
+        risk_level = "HIGH" if anomaly_prob >= 0.75 else ("MEDIUM" if anomaly_prob >= demo_threshold else "LOW")
+        
+        results.append({
+            "amazon_tgat_enabled": True,
+            "anomaly_probability": round(anomaly_prob, 4),
+            "similarity_score": round(similarity, 4),
+            "prediction": prediction,
+            "risk_level": risk_level,
+            "threshold_used": demo_threshold,
+            "threshold_note": "Demo-mode threshold (75th-pct of cold-start distribution). Training threshold: 0.52.",
+            "temporal_decay_tau_user": round(tau_u, 4),
+            "temporal_decay_tau_product": round(tau_p, 4),
+            "temporal_half_life_user_days": round(hl_u, 1),
+            "temporal_half_life_product_days": round(hl_p, 1),
+            "user_embedding_norm": round(float(u_emb[i].norm().item()), 4),
+            "product_embedding_norm": round(float(p_emb[i].norm().item()), 4),
+            "temporal_context": f"User decay half-life: {hl_u:.1f}d | Prod decay half-life: {hl_p:.1f}d",
+            "note": "DEMO MODE: Amazon Graph anomaly detection via link reconstruction (cold-start, no historical edges)."
+        })
 
-    return {
-        "amazon_tgat_enabled": True,
-        "anomaly_probability": round(anomaly_prob, 4),
-        "similarity_score": round(similarity, 4),
-        "prediction": prediction,
-        "risk_level": risk_level,
-        "threshold_used": demo_threshold,
-        "threshold_note": "Demo-mode threshold (75th-pct of cold-start distribution). Training threshold: 0.52.",
-        "temporal_decay_tau_user": round(tau_u, 4),
-        "temporal_decay_tau_product": round(tau_p, 4),
-        "temporal_half_life_user_days": round(hl_u, 1),
-        "temporal_half_life_product_days": round(hl_p, 1),
-        "user_embedding_norm": round(float(u_emb.norm().item()), 4),
-        "product_embedding_norm": round(float(p_emb.norm().item()), 4),
-        "temporal_context": f"User decay half-life: {hl_u:.1f}d | Prod decay half-life: {hl_p:.1f}d",
-        "note": "DEMO MODE: Amazon Graph anomaly detection via link reconstruction (cold-start, no historical edges)."
-    }
+    return results
+
 
 
 if __name__ == "__main__":

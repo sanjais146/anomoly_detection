@@ -461,7 +461,7 @@
                                 <p class="mb-4 text-gray-300">E-commerce anomalies (like review bombing or account takeovers) are inherently temporal.</p>
                                 <p class="mb-4 text-gray-300">Static graphs treat a review from 2012 the same as a review from 10 minutes ago. TGAT utilizes a continuous-time decay function:</p>
                                 <code class="block mb-4 bg-black p-3 rounded text-green-400 font-mono">w = exp(-τ * Δt_days)</code>
-                                <p class="text-gray-300">This forces the model to dynamically prioritize recent topological neighborhood structures, accurately mirroring the rapidly evolving nature of e-commerce fraud.</p>
+                                <p class="text-gray-300">This forces the model to dynamically prioritize recent topological neighborhood structures, accurately mirroring the rapidly evolving nature of e-commerce relationships and anomalies.</p>
                             </div>
                         </div>
                     </div>
@@ -498,7 +498,7 @@
                         <div class="card border-neutral">
                             <div class="card-header bg-neutral-light border-b border-neutral">
                                 <h3>Baseline: IEEE-CIS E10</h3>
-                                <span class="badge bg-neutral text-white">Tabular Transaction Fraud</span>
+                                <span class="badge bg-neutral text-white">Supervised Baseline (Historical)</span>
                             </div>
                             <div class="card-body">
                                 <div class="big-metric mb-6 text-neutral">62.25% <span class="text-sm font-normal text-gray-500">Test F1</span></div>

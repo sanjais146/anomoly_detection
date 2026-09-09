@@ -176,5 +176,18 @@ def predict_ieee_transaction(tx: TransactionInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/model-info")
+def model_info():
+    """System model information and deployment mode."""
+    e10 = get_predictor()
+    amazon_tgat = get_amazon_predictor()
+    return {
+        "tgat_status": "LOADED" if amazon_tgat else "NOT_LOADED",
+        "e10_status": "LOADED" if e10 else "NOT_LOADED",
+        "causal_boundary": "Strict chronological inductive mask (no future edge leakage).",
+        "model_version": "3.0.0",
+        "deployment_mode": "Cold-Start Demo Mode (Fixed-Seed Embedding)"
+    }
+
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False)
