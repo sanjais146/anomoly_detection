@@ -39,7 +39,7 @@ body {
     color: var(--text-main);
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
-    overflow: hidden;
+    overflow: hidden; /* body itself stays locked – scroll is inside .content-scroll */
 }
 
 /* Layout */
@@ -224,6 +224,7 @@ body {
 
 .content-scroll {
     flex: 1;
+    min-height: 0;   /* CRITICAL: allows flex child to shrink and scroll */
     overflow-y: auto;
     padding: 32px;
 }
