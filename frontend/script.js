@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
             contentEl.classList.add('active');
             
             // Update header title
-            pageTitle.innerText = item.innerText.trim();
+            pageTitle.innerHTML = '<span class="live-indicator"></span> ' + item.innerText.trim();
             
             // Resize ALL Chart.js instances after a short delay (tab was display:none before)
             setTimeout(() => {
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const score = result.anomaly_probability || 0.0;
             resScore.innerText = score.toFixed(3);
             
-            resCircle.className = 'score-circle ' + (result.prediction === 'anomalous' ? 'anomalous' : 'genuine');
+            resCircle.className = 'score-circle ' + (result.prediction === 'anomalous' ? 'anomalous glow-danger' : 'genuine glow-success');
             resClass.className = (result.prediction === 'anomalous' ? 'anomalous' : 'genuine');
             resClass.innerText = result.prediction.charAt(0).toUpperCase() + result.prediction.slice(1);
             
