@@ -16,6 +16,68 @@
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <!-- Styles -->
     <link rel="stylesheet" href="/static/style.css">
+    <!-- SCROLL-FIX: Inline override — guarantees correct flex scroll chain
+         regardless of whether style.css has been updated in the Colab session.
+         This block runs after style.css and wins on specificity. -->
+    <style>
+        /* Lock the outer shell to the viewport */
+        html, body {
+            height: 100%;
+            overflow: hidden !important;
+        }
+
+        /* Full-viewport flex shell */
+        .app-container {
+            display: flex !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden !important;
+        }
+
+        /* Sidebar fills its column, independent scroll if needed */
+        .sidebar {
+            flex-shrink: 0 !important;
+            overflow-y: auto !important;
+        }
+
+        /* Main column: flex-column, MUST have min-height:0 to allow child scroll */
+        .main-content {
+            flex: 1 1 0 !important;
+            min-width: 0 !important;
+            min-height: 0 !important;       /* ← key: prevents infinite flex growth */
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        /* Topbar is rigid — never shrinks */
+        .topbar {
+            flex-shrink: 0 !important;
+            height: 70px !important;
+        }
+
+        /* THE SCROLL CONTAINER — this is the element that actually scrolls */
+        .content-scroll {
+            flex: 1 1 0 !important;
+            min-height: 0 !important;       /* ← CRITICAL: without this, flex child
+                                                won't shrink and overflow-y is never
+                                                triggered */
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch; /* smooth scroll on mobile/iPad */
+        }
+
+        /* Tab sections must be plain block — no height:100% or flex that would
+           prevent natural content-height growth inside the scroll container */
+        .tab-content {
+            display: none;
+            min-height: unset !important;
+            height: auto !important;
+        }
+        .tab-content.active {
+            display: block !important;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
