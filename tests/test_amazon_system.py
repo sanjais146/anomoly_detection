@@ -169,10 +169,11 @@ def test_api_amazon_prediction_valid():
     assert "anomaly_probability" in data
     assert "risk_level" in data
     assert "prediction" in data
-    assert data['prediction'] in ('normal', 'anomalous')
+    assert data['prediction'] in ('genuine', 'anomalous')  # API returns 'genuine' not 'normal'
     assert "temporal_decay_tau_user" in data
 
 def test_api_amazon_prediction_missing_fields():
+    # asin and overall are truly required; unixReviewTime is now optional
     response = client.post("/predict/amazon", json={"reviewerID": "A123"})
     assert response.status_code == 422
 
