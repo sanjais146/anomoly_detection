@@ -59,7 +59,7 @@ class AmazonInteractionInput(BaseModel):
     reviewerID: str
     asin: str
     overall: float
-    unixReviewTime: float
+    unixReviewTime: Optional[float] = None
 
 @app.get("/")
 def read_root():
