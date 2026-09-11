@@ -583,18 +583,18 @@
                             <h3>Dataset Provenance: Amazon Electronics</h3>
                         </div>
                         <div class="card-body text-sm leading-relaxed">
-                            <p class="mb-4">The TGAT model is trained exclusively on the highly-cited <strong>Amazon Electronics</strong> review dataset.</p>
+                            <p class="mb-4">The primary TGAT anomaly detector uses real <strong>Amazon Electronics</strong> review data containing reviewer IDs, product ASINs, ratings, review information, and timestamps.</p>
                             
                             <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Training Data Source</h4>
-                            <code class="block mb-4 p-3 bg-gray-100 rounded text-gray-800 font-mono">
-                                data/amazon/raw/reviews_Electronics.json.gz (1.77 GB)<br>
-                                data/amazon/raw/meta_Electronics.json.gz (186 MB)
+                            <code class="block mb-4 p-3 bg-gray-100 rounded text-gray-800 font-mono text-xs">
+                                data/amazon/raw/reviews_Electronics.json.gz<br>
+                                data/amazon/raw/meta_Electronics.json.gz
                             </code>
                             
                             <div class="grid-2-col mb-4">
                                 <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
-                                    <strong class="text-blue-900 block mb-1">Full Training Data</strong>
-                                    <span class="text-blue-800 text-xs">20,000 real Amazon Electronics interactions strictly chronological for contrastive training.</span>
+                                    <strong class="text-blue-900 block mb-1">Training Graph</strong>
+                                    <span class="text-blue-800 text-xs">20,000 chronologically selected real Amazon Electronics interactions are used by the current TGAT pipeline.</span>
                                 </div>
                                 <div class="p-3 bg-gray-100 border-l-4 border-gray-400 rounded">
                                     <strong class="text-gray-800 block mb-1">Dashboard Visualization Sample</strong>
@@ -604,17 +604,21 @@
                             
                             <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Verified Real Graph Topology</h4>
                             <ul class="list-disc pl-5 mb-4 text-gray-600">
-                                <li><strong>Nodes:</strong> Real Amazon Reviewers (Users) and ASINs (Products)</li>
-                                <li><strong>Edges:</strong> Chronological real-world reviews with verified unix timestamps</li>
-                                <li><strong>No Synthetic Entities:</strong> No fabricated users or products exist in the graph.</li>
+                                <li><strong>Nodes:</strong> Real Amazon reviewers/users and Amazon products/ASINs</li>
+                                <li><strong>Edges:</strong> Real user–product review interactions with verified timestamps</li>
+                                <li><strong>No Synthetic Entities:</strong> User and product nodes are derived strictly from the real Amazon Electronics data.</li>
                             </ul>
 
-                            <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Self-Supervised Anomaly Definition</h4>
-                            <p class="text-gray-600 mb-4">Because the raw dataset lacks explicit "fraud" tags, anomalies are defined topologically. We utilize <strong>Contrastive Negative Sampling</strong>:</p>
-                            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 text-blue-900 rounded">
-                                <strong>Negative Edges (Anomalies):</strong> The model dynamically queries unobserved edges (a real user interacting with a real product they have zero genuine affinity/history with) to represent anomalous interactions (e.g., review bombing, account hijacking).
+                            <h4 class="mt-6 mb-2 text-md font-semibold border-b pb-2">Self-Supervised Anomaly Detection</h4>
+                            <p class="text-gray-600 mb-4">The Amazon Electronics review dataset does not provide explicit fraud labels for these interactions. The TGAT pipeline therefore uses contrastive negative sampling during self-supervised learning. Unobserved user–product relationships are used as negative samples so the model learns temporal and structural patterns of observed interactions.</p>
+
+                            <div class="bg-gray-50 border-l-4 border-gray-400 p-4 mb-4 text-gray-800 rounded">
+                                <strong>Scientific Definition:</strong> Anomaly = temporally or structurally unexpected user–product interaction.
                             </div>
-                            <p class="text-gray-600">This strictly forces the TGAT to distinguish genuine topological behavior from random or malicious structural injections.</p>
+
+                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 text-yellow-900 rounded">
+                                <strong>IMPORTANT INTERPRETATION:</strong> An anomaly score represents how unusual an interaction is relative to the learned temporal/structural graph patterns. A high anomaly score does <strong>NOT</strong> mean confirmed fraud.
+                            </div>
                         </div>
                     </div>
                 </section>
