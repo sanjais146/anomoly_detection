@@ -19,7 +19,7 @@ The final system models **Amazon Electronics** interactions as a bipartite tempo
 - **Anomaly Scoring:** The model attempts to reconstruct the link. The anomaly score is $1 - \sigma(E_u \cdot E_p)$. If the topological history strongly suggests the user and product should not interact, the score is high (Anomaly). 
 
 ### Live Dashboard & API
-The system is deployed as a live **FastAPI** backend powering a dense, dark-mode **Vercel-inspired Analytics Command Center**. The dashboard executes real-time inference through the frozen PyTorch checkpoint (`models/amazon_tgat.pt`).
+The system is deployed as a live **FastAPI** backend powering a dense, dark-mode **Vercel-inspired Analytics Command Center**. The dashboard executes cold-start demo inference through the frozen PyTorch checkpoint (`models/amazon_tgat.pt`).
 
 ---
 
@@ -35,16 +35,18 @@ To maintain scientific integrity and provide context, we preserve our prior rese
 
 ---
 
-## 3. Deployment (Google Colab / Live Demo)
+## 3. How to Run
 
-The entire system is designed to be deployed and demonstrated with a single click via Google Colab.
+### Google Colab
 
-### Quick Start
-1. Open [`colab/run_demo.ipynb`](colab/run_demo.ipynb) in Google Colab.
-2. In the Colab Secrets panel, add your free ngrok token: `Name: NGROK_AUTHTOKEN`.
-3. Click **Runtime > Run all**.
+1. Open `colab/run_demo.ipynb` in Google Colab.
+2. Configure the required Colab Secret(s) (e.g., `NGROK_AUTHTOKEN`).
+3. Run all cells.
+4. Wait for FastAPI and ngrok to start.
+5. Open the generated public URL.
+6. Use `/docs` on the same URL for API documentation.
 
-The notebook will pull the repository, load the LFS model binaries, launch the FastAPI server, and provide a public ngrok URL to access the live dashboard.
+*Note: Google Colab is the ONLY supported execution environment for this project. Local installation is not supported.*
 
 ---
 

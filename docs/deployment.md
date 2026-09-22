@@ -28,17 +28,3 @@ The primary and fully supported deployment mechanism for demonstration is **Goog
 3. Scroll to the bottom of the output in the final cell. You will see a live public URL (e.g., `https://xxxx-xx-xx-xx-xx.ngrok-free.app`).
 4. Click the URL to open the Live Command Center Dashboard.
 
-## 4. Local Deployment (Alternative)
-If you prefer to run locally on Windows/Linux/Mac:
-```bash
-# Clone and enter repo
-git clone https://github.com/sanjais146/anomoly_detection
-cd anomaly-detect
-
-# Install requirements
-pip install -r requirements.txt
-
-# Start the API and Dashboard
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-Then navigate to `http://localhost:8000` in your browser.
