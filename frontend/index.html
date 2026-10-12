@@ -435,7 +435,7 @@
                                         <label for="unixReviewTime">Unix Timestamp</label>
                                         <input type="number" id="unixReviewTime" placeholder="Leave blank for current time" value="1388534400">
                                     </div>
-                                    <button type="submit" class="btn btn-primary w-full" id="btn-analyze">
+                                    <button type="button" class="btn btn-primary w-full" id="btn-analyze" onclick="document.getElementById('anomaly-form').dispatchEvent(new Event('submit', { cancelable: true }))">
                                         <i class="fa-solid fa-microchip"></i> Run TGAT Inference
                                     </button>
                                 </form>
