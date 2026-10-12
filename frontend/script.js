@@ -64,18 +64,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: 'Interactions Analyzed',
                 data: [],
                 borderColor: '#0070f3',
-                backgroundColor: 'rgba(0, 112, 243, 0.1)',
+                backgroundColor: 'rgba(0, 112, 243, 0.08)',
+                borderWidth: 2,
+                pointRadius: 1,
+                pointHoverRadius: 5,
                 fill: true,
-                tension: 0.4
+                tension: 0.35
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `Interactions: ${ctx.parsed.y.toLocaleString()}`
+                    }
+                }
+            },
             scales: {
-                x: { display: false },
-                y: { display: false }
+                x: {
+                    display: true,
+                    grid: { display: false },
+                    ticks: { maxTicksLimit: 12, color: '#9ca3af', font: { size: 10 } }
+                },
+                y: {
+                    display: true,
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: { size: 10 },
+                        callback: (v) => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v
+                    }
+                }
             }
         }
     });
@@ -87,16 +110,38 @@ document.addEventListener('DOMContentLoaded', () => {
         data: {
             labels: ['1 Star', '2 Stars', '3 Stars', '4 Stars', '5 Stars'],
             datasets: [{
-                label: 'Rating Freq',
+                label: 'Rating Count',
                 data: [0, 0, 0, 0, 0],
-                backgroundColor: ['#ef4444', '#f59e0b', '#fcd34d', '#10b981', '#059669']
+                backgroundColor: ['#ef4444', '#f59e0b', '#fcd34d', '#10b981', '#059669'],
+                borderRadius: 4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } }
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `Reviews: ${ctx.parsed.y.toLocaleString()}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#9ca3af',
+                        font: { size: 10 },
+                        callback: (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                },
+                x: {
+                    ticks: { color: '#6b7280', font: { size: 11, weight: '500' } },
+                    grid: { display: false }
+                }
+            }
         }
     });
 
@@ -572,11 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const recentTbody = document.getElementById('recent-table-tbody');
     const emptyRow = document.getElementById('recent-empty-row');
     
-    // Chart Data Arrays
-    let timelineLabels = [];
-    let timelineData = [];
-    let distBins = [0,0,0,0,0];
-    
+
     window.executeInference = async function(event) {
         if (event && event.preventDefault) event.preventDefault();
         
@@ -700,21 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recentTbody.insertBefore(tr, recentTbody.firstChild);
             if(recentTbody.children.length > 6) recentTbody.removeChild(recentTbody.lastChild);
             
-            // 3. Update Chart.js
-            timelineLabels.push(new Date().toLocaleTimeString());
-            timelineData.push(1);
-            if(timelineLabels.length > 20) {
-                timelineLabels.shift();
-                timelineData.shift();
-            }
-            timelineChart.data.labels = timelineLabels;
-            timelineChart.data.datasets[0].data = timelineData;
-            timelineChart.update();
-            
-            const binIdx = Math.min(Math.floor(score * 5), 4);
-            distBins[binIdx]++;
-            distChart.data.datasets[0].data = distBins;
-            distChart.update();
+
             
             // 4. Update Vis.js Graph with rich styling
             const uId = "U_" + payload.reviewerID;
