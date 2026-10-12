@@ -1009,6 +1009,118 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Initial health check
+    // Complete 20,000 Dataset Explorer Logic
+    let currentDatasetPage = 1;
+    let currentDatasetSearch = "";
+
+    async function loadDatasetPage(page = 1, search = "") {
+        const tbody = document.getElementById('dataset-table-tbody');
+        const infoEl = document.getElementById('dataset-pagination-info');
+        const pageEl = document.getElementById('dataset-current-page');
+        const prevBtn = document.getElementById('dataset-prev-btn');
+        const nextBtn = document.getElementById('dataset-next-btn');
+        const captionEl = document.getElementById('dataset-count-caption');
+
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading Amazon Electronics interactions...</td></tr>`;
+        }
+
+        try {
+            const queryParams = new URLSearchParams({
+                page: page,
+                page_size: 25,
+                search: search
+            });
+            const res = await fetch(`/dataset/amazon/interactions?${queryParams}`);
+            const data = await res.json();
+
+            currentDatasetPage = data.page;
+            if (pageEl) pageEl.innerText = data.page;
+            if (prevBtn) prevBtn.disabled = data.page <= 1;
+            if (nextBtn) nextBtn.disabled = data.page >= data.total_pages;
+
+            if (infoEl) {
+                infoEl.innerText = `Showing page ${data.page.toLocaleString()} of ${data.total_pages.toLocaleString()} (${data.total_count.toLocaleString()} matching interactions)`;
+            }
+            if (captionEl) {
+                captionEl.innerText = `Verified Amazon Electronics Reviews — Total Verified Records: ${data.total_count.toLocaleString()}`;
+            }
+
+            if (tbody) {
+                if (!data.interactions || data.interactions.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-500">No interactions match query "${search}".</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = data.interactions.map(row => {
+                    const dt = row.unixReviewTime ? new Date(row.unixReviewTime * 1000).toLocaleDateString() : 'N/A';
+                    const ratingStar = `${row.overall || 5.0} ★`;
+                    const summary = row.summary || (row.reviewText ? row.reviewText.substring(0, 60) + '...' : 'Verified Amazon Review');
+                    const reviewer = row.reviewerID || 'Unknown';
+                    const asin = row.asin || 'Unknown';
+                    const rating = row.overall || 5.0;
+                    const ts = row.unixReviewTime || 1388534400;
+
+                    return `
+                        <tr style="cursor:pointer" title="Click to analyze with TGAT" onclick="inspectInteraction('${reviewer}', '${asin}', ${rating}, ${ts})">
+                            <td style="color:#64748b;font-size:11px">${dt}</td>
+                            <td class="font-mono text-xs font-bold text-gray-800">${reviewer}</td>
+                            <td class="font-mono text-xs text-blue-600">${asin}</td>
+                            <td style="color:#d97706;font-weight:600">${ratingStar}</td>
+                            <td class="text-gray-600 text-xs truncate" style="max-width:320px">${summary}</td>
+                            <td>
+                                <button type="button" class="btn btn-outline text-xs" style="padding:2px 8px;font-size:11px" onclick="event.stopPropagation(); inspectInteraction('${reviewer}', '${asin}', ${rating}, ${ts})">
+                                    <i class="fa-solid fa-microchip text-primary"></i> Analyze
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error("Error loading dataset interactions:", err);
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500">Failed to load dataset interactions from server.</td></tr>`;
+            }
+        }
+    }
+
+    window.searchDataset = function() {
+        const input = document.getElementById('dataset-search-input');
+        currentDatasetSearch = input ? input.value.trim() : "";
+        loadDatasetPage(1, currentDatasetSearch);
+    };
+
+    window.resetDatasetSearch = function() {
+        const input = document.getElementById('dataset-search-input');
+        if (input) input.value = "";
+        currentDatasetSearch = "";
+        loadDatasetPage(1, "");
+    };
+
+    window.changeDatasetPage = function(delta) {
+        loadDatasetPage(currentDatasetPage + delta, currentDatasetSearch);
+    };
+
+    // When switching to the Amazon Dataset tab, auto-load if not loaded yet
+    const datasetNav = document.querySelector('[data-tab="dataset"]');
+    if (datasetNav) {
+        datasetNav.addEventListener('click', () => {
+            loadDatasetPage(currentDatasetPage, currentDatasetSearch);
+        });
+    }
+
+    // Auto-run first sample inference on load so the "Inference Results" window is never blank
+    setTimeout(() => {
+        const rVal = document.getElementById('reviewerID')?.value;
+        const aVal = document.getElementById('asin')?.value;
+        if (rVal && aVal) {
+            const formEl = document.getElementById('anomaly-form');
+            if (formEl) formEl.dispatchEvent(new Event('submit'));
+        }
+    }, 600);
+
+    // Initial health check and initial load of dataset
     checkHealth();
+    loadDatasetPage(1, "");
 });

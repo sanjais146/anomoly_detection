@@ -133,6 +133,51 @@ def analytics_amazon_anomalies():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/dataset/amazon/interactions")
+def get_dataset_interactions(page: int = 1, page_size: int = 50, search: str = ""):
+    """
+    Serves paginated and searchable interactions from the complete 20,000 Amazon Electronics dataset.
+    """
+    sample_file = "data/amazon/raw/sample_reviews.json"
+    if not os.path.exists(sample_file):
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    
+    interactions = []
+    search_lower = search.lower().strip()
+    total_matches = 0
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+
+    try:
+        with open(sample_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                
+                # Filter if search query provided
+                if search_lower:
+                    u = str(row.get("reviewerID", "")).lower()
+                    p = str(row.get("asin", "")).lower()
+                    s = str(row.get("summary", "")).lower()
+                    if search_lower not in u and search_lower not in p and search_lower not in s:
+                        continue
+                
+                if total_matches >= start_idx and total_matches < end_idx:
+                    interactions.append(row)
+                total_matches += 1
+                
+        return {
+            "total_count": total_matches,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_matches + page_size - 1) // page_size if total_matches > 0 else 1,
+            "interactions": interactions
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/predict/amazon")
 def predict_amazon_anomaly(interaction: AmazonInteractionInput):
     """

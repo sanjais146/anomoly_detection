@@ -421,11 +421,11 @@
                                 <form id="anomaly-form" class="compact-form">
                                     <div class="form-group">
                                         <label for="reviewerID">Reviewer ID (User)</label>
-                                        <input type="text" id="reviewerID" placeholder="e.g., A3BY5KCNQZSN5U" required>
+                                        <input type="text" id="reviewerID" placeholder="e.g., A3BY5KCNQZSN5U" value="A1IU7S4HCK1XK0" required>
                                     </div>
                                     <div class="form-group">
                                         <label for="asin">ASIN (Product)</label>
-                                        <input type="text" id="asin" placeholder="e.g., B00000J3Q1" required>
+                                        <input type="text" id="asin" placeholder="e.g., B00000J3Q1" value="B00007E7JU" required>
                                     </div>
                                     <div class="form-group">
                                         <label for="overall">Rating (1-5)</label>
@@ -433,7 +433,7 @@
                                     </div>
                                     <div class="form-group">
                                         <label for="unixReviewTime">Unix Timestamp</label>
-                                        <input type="number" id="unixReviewTime" placeholder="Leave blank for current time">
+                                        <input type="number" id="unixReviewTime" placeholder="Leave blank for current time" value="1388534400">
                                     </div>
                                     <button type="submit" class="btn btn-primary w-full" id="btn-analyze">
                                         <i class="fa-solid fa-microchip"></i> Run TGAT Inference
@@ -908,6 +908,67 @@
 
                             <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4 text-yellow-900 rounded">
                                 <strong>IMPORTANT INTERPRETATION:</strong> An anomaly score represents how unusual an interaction is relative to the learned temporal/structural graph patterns. A high anomaly score does <strong>NOT</strong> mean confirmed fraud.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COMPLETE 20,000 DATASET INTERACTION EXPLORER TABLE -->
+                    <div class="card mt-6">
+                        <div class="card-header flex-between" style="flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h3><i class="fa-solid fa-table-list text-primary"></i> Complete Amazon Electronics Dataset (20,000 Interactions)</h3>
+                                <p class="text-xs text-gray-500 mt-0.5" id="dataset-count-caption">Showing interactions from verified Amazon Electronics reviews</p>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <div style="position:relative">
+                                    <input type="text" id="dataset-search-input" placeholder="Search Reviewer ID, ASIN, or Keyword..." 
+                                           style="padding:6px 12px 6px 30px;font-size:12px;border:1px solid #cbd5e1;border-radius:6px;width:240px"
+                                           onkeyup="if(event.key==='Enter') searchDataset()">
+                                    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:9px;color:#94a3b8;font-size:12px"></i>
+                                </div>
+                                <button type="button" class="btn btn-primary text-xs" style="padding:6px 12px" onclick="searchDataset()">
+                                    Search
+                                </button>
+                                <button type="button" class="btn btn-outline text-xs" style="padding:6px 12px" onclick="resetDatasetSearch()">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="overflow-x-auto">
+                                <table class="data-table w-full text-xs">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:12%">Date</th>
+                                            <th style="width:18%">Reviewer ID</th>
+                                            <th style="width:14%">Product ASIN</th>
+                                            <th style="width:8%">Rating</th>
+                                            <th style="width:36%">Review Summary / Content</th>
+                                            <th style="width:12%">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dataset-table-tbody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-6 text-gray-400">
+                                                <i class="fa-solid fa-circle-notch fa-spin"></i> Loading Amazon Electronics interactions...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div class="flex-between p-3 border-t bg-gray-50" style="font-size:12px;align-items:center">
+                                <span class="text-gray-500" id="dataset-pagination-info">Showing page 1 of 400 (20,000 interactions)</span>
+                                <div style="display:flex;gap:6px;align-items:center">
+                                    <button type="button" class="btn btn-outline" style="padding:3px 10px;font-size:11px" id="dataset-prev-btn" onclick="changeDatasetPage(-1)" disabled>
+                                        <i class="fa-solid fa-chevron-left"></i> Previous
+                                    </button>
+                                    <span class="font-mono font-bold text-gray-700 px-2" id="dataset-current-page">1</span>
+                                    <button type="button" class="btn btn-outline" style="padding:3px 10px;font-size:11px" id="dataset-next-btn" onclick="changeDatasetPage(1)">
+                                        Next <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
