@@ -215,8 +215,15 @@
                     <div class="dashboard-grid mb-6">
                         <div class="card col-span-2 flex flex-col">
                             <div class="card-header border-b flex-between">
-                                <h3>User/Product Graph Preview</h3>
-                                <span class="badge bg-neutral-light text-gray-500 border">Representative sample of real Amazon Electronics interactions</span>
+                                <div>
+                                    <h3>User/Product Graph Preview</h3>
+                                    <span class="badge bg-neutral-light text-gray-500 border mt-1" id="overview-graph-stats">Loading active nodes...</span>
+                                </div>
+                                <div class="legend">
+                                    <span class="legend-item"><span class="dot" style="background:#2563eb"></span> Buyer (Single)</span>
+                                    <span class="legend-item"><span class="dot" style="background:#f59e0b"></span> Power Buyer (Bridge)</span>
+                                    <span class="legend-item"><span class="dot" style="background:#059669;border-radius:2px"></span> Product ASIN</span>
+                                </div>
                             </div>
                             <div class="card-body p-0" style="position:relative">
                                 <div id="vis-network-overview" style="width:100%;height:320px;"></div>
@@ -454,18 +461,24 @@
                 <section id="tab-graph-analytics" class="tab-content">
                     <div class="card h-full flex-col">
                         <div class="card-header flex-between">
-                            <h3>Bipartite Amazon Review Graph</h3>
+                            <div>
+                                <h3>Bipartite Amazon Review Graph</h3>
+                                <span class="badge bg-neutral-light text-gray-500 border mt-1" id="main-graph-stats">Real Amazon Electronics Topology</span>
+                            </div>
                             <div class="legend">
-                                <span class="legend-item"><span class="dot user"></span> User</span>
-                                <span class="legend-item"><span class="dot product"></span> Product</span>
-                                <span class="legend-item"><span class="line genuine"></span> Genuine</span>
-                                <span class="legend-item"><span class="line anomalous"></span> Anomalous</span>
+                                <span class="legend-item"><span class="dot" style="background:#2563eb"></span> Buyer (Single)</span>
+                                <span class="legend-item"><span class="dot" style="background:#f59e0b"></span> Power Buyer (Bridge)</span>
+                                <span class="legend-item"><span class="dot" style="background:#059669;border-radius:2px"></span> Product Hub</span>
+                                <span class="legend-item"><span class="line genuine"></span> 4-5★ Review</span>
+                                <span class="legend-item"><span class="line anomalous"></span> 1-2★ Review</span>
                             </div>
                         </div>
                         <div class="card-body p-0" style="position:relative">
                             <div id="vis-network" style="width:100%;height:500px;"></div>
                             <div class="watermark bottom-right pointer-events-none" id="wm-graph">Data dynamically populated from live inference</div>
-                            <div style="position:absolute;bottom:8px;left:8px;font-size:11px;color:#6b7280;background:#fff;padding:3px 8px;border-radius:4px;opacity:0.85" id="lbl-graph">Visualized subset of available dataset (max 500 nodes) for UI stability (+ live inferences)</div>
+                            <div style="position:absolute;bottom:8px;left:8px;font-size:11px;color:#6b7280;background:#fff;padding:4px 10px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);opacity:0.92" id="lbl-graph">
+                                <i class="fa-solid fa-circle-nodes text-primary"></i> <span id="graph-counts-label">Bipartite Amazon Graph: 101 Reviews across verified Users & Products. Drag nodes or scroll to zoom.</span>
+                            </div>
                         </div>
                     </div>
                 </section>

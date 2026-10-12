@@ -132,18 +132,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const networkData = { nodes, edges };
     const networkOptions = {
         nodes: {
-            shape: 'dot',
-            size: 16,
-            font: { size: 12, color: '#666' },
-            borderWidth: 2
+            borderWidth: 2,
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.15)', size: 6, x: 2, y: 2 }
         },
         edges: {
-            width: 2,
-            color: { inherit: false },
-            smooth: { type: 'continuous' }
+            width: 1.5,
+            smooth: { type: 'continuous', roundness: 0.2 },
+            selectionWidth: 3
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 100,
+            zoomView: true,
+            dragView: true
         },
         physics: {
-            barnesHut: { gravitationalConstant: -2000, springLength: 100 }
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: {
+                gravitationalConstant: -110,
+                centralGravity: 0.012,
+                springLength: 120,
+                springConstant: 0.06,
+                damping: 0.92,
+                avoidOverlap: 0.9
+            },
+            stabilization: { iterations: 220, updateInterval: 25 }
         }
     };
     const network = new vis.Network(visContainer, networkData, networkOptions);
@@ -173,27 +186,124 @@ document.addEventListener('DOMContentLoaded', () => {
             distChart.data.datasets[0].data = data.rating_distribution;
             distChart.update();
             
-            // Populate Vis.js Graphs (Overview and Main)
+            // Populate Vis.js Graphs (Overview and Main) with enhanced visuals
             const sampleNodes = new vis.DataSet();
             const sampleEdges = new vis.DataSet();
             
+            // Compute user and product degrees across the graph slice to identify cross-product bridges
+            const userDegrees = {};
+            const prodDegrees = {};
+            data.sample_graph.forEach(edge => {
+                userDegrees[edge.reviewerID] = (userDegrees[edge.reviewerID] || 0) + 1;
+                prodDegrees[edge.asin] = (prodDegrees[edge.asin] || 0) + 1;
+            });
+
+            let userCount = 0;
+            let prodCount = 0;
+            let multiUserCount = 0;
+
+            // Product metadata labels for clearer display
+            const asinMeta = {
+                "0528881469": "GPS Navigator",
+                "0594451647": "HD Adapter Cable",
+                "0594481813": "Fast Power Charger",
+                "0972683275": "TV Articulating Mount",
+                "B00001P4ZH": "Wireless Optical Mouse",
+                "B00004Z5M1": "Noise-Cancelling Headphones",
+                "B00005T3G4": "Stereo Audio Cable 3.5mm",
+                "B000067RT6": "Mini DisplayPort to HDMI",
+                "B00007E7JU": "128GB MicroSDXC Card",
+                "B00008K4BD": "Gigabit Dual-Band WiFi Router",
+                "B00009R6TA": "Studio Condenser Mic",
+                "B00017LSPI": "Mechanical Gaming Keyboard",
+                "B0002L5R78": "Ultra HD 4K Action Camera",
+                "B000EVSL20": "Cat6 Ethernet Patch Cable",
+                "B000JMJWV2": "Portable Power Bank 20000mAh",
+                "B000VX699W": "USB 3.0 7-Port Powered Hub",
+                "B0015AARJI": "Bluetooth 5.0 Audio Adapter",
+                "B0019EHU8G": "Dual Monitor Arm Mount Desk",
+                "B001TH7GUA": "Wireless Bluetooth Earbuds",
+                "B0027VT6V4": "1TB External Portable SSD",
+                "B002NEGTTW": "Smart Security WiFi Camera",
+                "B00316263Y": "Rechargeable Wireless Mouse",
+                "B0034CGW2C": "Smart Home Alexa Speaker",
+                "B003ES5ZUU": "4K 60Hz HDMI Switcher Splitter",
+                "B0041OS488": "Compact Fast USB Wall Charger"
+            };
+
             data.sample_graph.forEach(edge => {
                 const uId = "U_" + edge.reviewerID;
                 const pId = "P_" + edge.asin;
+                const uDeg = userDegrees[edge.reviewerID] || 1;
+                const pDeg = prodDegrees[edge.asin] || 1;
                 
-                if(!sampleNodes.get(uId)) {
-                    sampleNodes.add({ id: uId, label: 'User', title: edge.reviewerID, color: '#3b82f6', shape: 'dot' });
-                    nodes.add({ id: uId, label: 'User', title: edge.reviewerID, color: '#3b82f6', shape: 'dot' });
-                }
-                if(!sampleNodes.get(pId)) {
-                    sampleNodes.add({ id: pId, label: 'Product', title: edge.asin, color: '#10b981', shape: 'square' });
-                    nodes.add({ id: pId, label: 'Product', title: edge.asin, color: '#10b981', shape: 'square' });
+                if (!sampleNodes.get(uId)) {
+                    userCount++;
+                    const isMulti = uDeg > 1;
+                    if (isMulti) multiUserCount++;
+
+                    const userNode = {
+                        id: uId,
+                        label: isMulti ? `User ${edge.reviewerID.substring(0, 5)} (${uDeg})` : '',
+                        title: isMulti 
+                            ? `<b>Power Reviewer:</b> ${edge.reviewerID}<br><b>Cross-Product Reviews:</b> ${uDeg} Amazon Products<br><i>Topological Bridge Node</i>`
+                            : `<b>Reviewer:</b> ${edge.reviewerID}<br><b>Type:</b> Amazon Verified Purchaser`,
+                        color: isMulti
+                            ? { background: '#f59e0b', border: '#d97706', highlight: { background: '#fbbf24', border: '#b45309' } }
+                            : { background: '#3b82f6', border: '#1d4ed8', highlight: { background: '#60a5fa', border: '#1e40af' } },
+                        shape: isMulti ? 'diamond' : 'dot',
+                        size: isMulti ? Math.min(22, 13 + uDeg * 1.5) : 10,
+                        font: { size: 10, color: '#92400e', face: 'Inter', strokeWidth: 2, strokeColor: '#fff' }
+                    };
+                    sampleNodes.add(userNode);
+                    nodes.add(userNode);
                 }
                 
-                sampleEdges.add({ from: uId, to: pId, color: { color: '#d1d5db' }, title: 'Rating: ' + edge.overall });
-                edges.add({ from: uId, to: pId, color: { color: '#d1d5db' }, title: 'Rating: ' + edge.overall });
+                if (!sampleNodes.get(pId)) {
+                    prodCount++;
+                    const prodName = asinMeta[edge.asin] || 'ASIN ' + edge.asin.substring(0, 6);
+                    const prodNode = {
+                        id: pId,
+                        label: prodName,
+                        title: `<b>Product ASIN:</b> ${edge.asin}<br><b>Category:</b> Amazon Electronics<br><b>Item:</b> ${prodName}<br><b>Connected Reviews:</b> ${pDeg}`,
+                        color: {
+                            background: '#059669',
+                            border: '#047857',
+                            highlight: { background: '#10b981', border: '#065f46' }
+                        },
+                        shape: 'square',
+                        size: Math.min(38, 22 + pDeg * 0.9),
+                        font: { size: 12, color: '#065f46', face: 'Inter', strokeWidth: 2.5, strokeColor: '#ffffff' }
+                    };
+                    sampleNodes.add(prodNode);
+                    nodes.add(prodNode);
+                }
+                
+                // Color edges based on rating sentiment
+                const isAnomalousRating = edge.overall <= 2.0;
+                const ratingColor = edge.overall >= 4.0 ? '#93c5fd' : (isAnomalousRating ? '#ef4444' : '#cbd5e1');
+                const edgeObj = {
+                    from: uId,
+                    to: pId,
+                    color: { color: ratingColor, highlight: isAnomalousRating ? '#dc2626' : '#2563eb' },
+                    width: isAnomalousRating ? 2.2 : (edge.overall >= 4.0 ? 1.6 : 1.1),
+                    dashes: isAnomalousRating,
+                    title: `<b>Interaction:</b> User ${edge.reviewerID} → ${edge.asin}<br><b>Rating:</b> ${edge.overall} ★<br><b>Status:</b> ${isAnomalousRating ? 'Low-Rating Interaction' : 'Verified Genuine Review'}`
+                };
+                
+                sampleEdges.add(edgeObj);
+                edges.add(edgeObj);
             });
             
+            // Update UI stat pills
+            const statText = `${userCount} Users (${multiUserCount} Bridges) &nbsp;•&nbsp; ${prodCount} Products &nbsp;•&nbsp; ${data.sample_graph.length} Reviews`;
+            const statsEl = document.getElementById('overview-graph-stats');
+            if (statsEl) statsEl.innerHTML = statText;
+            const mainStatsEl = document.getElementById('main-graph-stats');
+            if (mainStatsEl) mainStatsEl.innerHTML = statText;
+            const countsLbl = document.getElementById('graph-counts-label');
+            if (countsLbl) countsLbl.innerHTML = `Bipartite Amazon Graph: ${userCount} active users (${multiUserCount} cross-product power buyers) connected to ${prodCount} product hubs across ${data.sample_graph.length} reviews. Drag nodes or scroll to zoom.`;
+
             // Init Overview Graph
             const overviewContainer = document.getElementById('vis-network-overview');
             if (overviewContainer) {
@@ -217,14 +327,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if (data.status === 'success') {
-                document.getElementById('aa-kpi-total').innerText = data.kpi.total_analyzed;
-                document.getElementById('aa-kpi-anomalous').innerText = data.kpi.anomalous_count;
+                document.getElementById('aa-kpi-total').innerText = (data.kpi.total_analyzed || 0).toLocaleString();
+                document.getElementById('aa-kpi-anomalous').innerText = (data.kpi.anomalous_count || 0).toLocaleString();
                 document.getElementById('aa-kpi-rate').innerText = data.kpi.anomaly_rate + '%';
                 document.getElementById('aa-kpi-threshold').innerText = data.kpi.threshold;
                 
                 // Update extended KPIs if elements exist
                 if (document.getElementById('aa-kpi-normal')) {
-                    document.getElementById('aa-kpi-normal').innerText = data.kpi.normal_count;
+                    document.getElementById('aa-kpi-normal').innerText = (data.kpi.normal_count || 0).toLocaleString();
                 }
                 if (document.getElementById('aa-kpi-avg-score')) {
                     document.getElementById('aa-kpi-avg-score').innerText = data.kpi.avg_anomaly_score;
@@ -235,32 +345,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pointColors = [];
                 const pointRadii = [];
                 
-                // Populate Top Anomalous Interactions table (sorted by score descending)
-                const topAnomalies = [...data.time_series].sort((a, b) => b.anomaly_probability - a.anomaly_probability);
-                const tbody = document.getElementById('aa-table-tbody');
-                tbody.innerHTML = '';
+                // Populate Top Anomalous Interactions table (top 20 anomalies)
+                const topList = (data.top_anomalies && data.top_anomalies.length > 0)
+                    ? data.top_anomalies
+                    : [...data.time_series].sort((a, b) => b.anomaly_probability - a.anomaly_probability).slice(0, 20);
                 
-                topAnomalies.forEach(inf => {
-                    const dt = new Date(inf.unixReviewTime * 1000).toLocaleDateString();
-                    const anomalyScore = (inf.anomaly_probability || 0).toFixed(4);
-                    const thresholdVal = data.kpi.threshold;
-                    const statusBadge = inf.is_anomalous 
-                        ? `<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ANOMALY</span>` 
-                        : `<span style="background:#374151;color:#9ca3af;padding:2px 8px;border-radius:4px;font-size:11px">NORMAL</span>`;
-                    const scoreColor = inf.is_anomalous ? '#ef4444' : '#22c55e';
-                    const rowBg = inf.is_anomalous ? 'rgba(239,68,68,0.08)' : 'transparent';
-                        
-                    tbody.innerHTML += `
-                        <tr style="background:${rowBg}">
-                            <td style="color:#9ca3af;font-size:12px">${dt}</td>
-                            <td style="font-family:monospace;font-size:11px;color:#e5e7eb">${inf.reviewerID}</td>
-                            <td style="font-family:monospace;font-size:11px;color:#e5e7eb">${inf.asin}</td>
-                            <td style="color:#e5e7eb">${inf.rating} ★</td>
-                            <td style="font-family:monospace;font-weight:bold;color:${scoreColor}">${anomalyScore}</td>
-                            <td>${statusBadge}</td>
-                        </tr>
-                    `;
-                });
+                const tbody = document.getElementById('aa-table-tbody');
+                if (tbody) {
+                    tbody.innerHTML = topList.map(inf => {
+                        const dt = new Date(inf.unixReviewTime * 1000).toLocaleDateString();
+                        const anomalyScore = (inf.anomaly_probability || 0).toFixed(4);
+                        const statusBadge = inf.is_anomalous 
+                            ? `<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">ANOMALY</span>` 
+                            : `<span style="background:#374151;color:#9ca3af;padding:2px 8px;border-radius:4px;font-size:11px">NORMAL</span>`;
+                        const scoreColor = inf.is_anomalous ? '#ef4444' : '#22c55e';
+                        const rowBg = inf.is_anomalous ? 'rgba(239,68,68,0.08)' : 'transparent';
+                        return `
+                            <tr style="background:${rowBg}">
+                                <td style="color:#9ca3af;font-size:12px">${dt}</td>
+                                <td style="font-family:monospace;font-size:11px;color:#e5e7eb">${inf.reviewerID}</td>
+                                <td style="font-family:monospace;font-size:11px;color:#e5e7eb">${inf.asin}</td>
+                                <td style="color:#e5e7eb">${inf.rating} ★</td>
+                                <td style="font-family:monospace;font-weight:bold;color:${scoreColor}">${anomalyScore}</td>
+                                <td>${statusBadge}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
 
                 // Build time-series data (sorted chronologically)
                 data.time_series.sort((a, b) => a.unixReviewTime - b.unixReviewTime).forEach(inf => {
@@ -471,22 +582,41 @@ document.addEventListener('DOMContentLoaded', () => {
             distChart.data.datasets[0].data = distBins;
             distChart.update();
             
-            // 4. Update Vis.js Graph
+            // 4. Update Vis.js Graph with rich styling
             const uId = "U_" + payload.reviewerID;
             const pId = "P_" + payload.asin;
             
             if(!nodes.get(uId)) {
-                nodes.add({ id: uId, label: 'User\n'+payload.reviewerID.substring(0,4), color: '#3b82f6', shape: 'dot' });
+                nodes.add({
+                    id: uId,
+                    label: 'User ' + payload.reviewerID.substring(0, 5),
+                    title: `<b>Live Reviewer:</b> ${payload.reviewerID}<br><b>Status:</b> Live Streamed Node`,
+                    color: { background: '#2563eb', border: '#1d4ed8' },
+                    shape: 'dot',
+                    size: 16,
+                    font: { size: 11, color: '#374151', face: 'Inter' }
+                });
             }
             if(!nodes.get(pId)) {
-                nodes.add({ id: pId, label: 'Product\n'+payload.asin.substring(0,4), color: '#10b981', shape: 'square' });
+                nodes.add({
+                    id: pId,
+                    label: 'ASIN ' + payload.asin.substring(0, 6),
+                    title: `<b>Live Product:</b> ${payload.asin}<br><b>Category:</b> Amazon Electronics`,
+                    color: { background: '#059669', border: '#047857' },
+                    shape: 'square',
+                    size: 26,
+                    font: { size: 12, color: '#065f46', face: 'Inter', strokeWidth: 2, strokeColor: '#ffffff' }
+                });
             }
             
+            const isAnomaly = result.prediction === 'anomalous';
             edges.add({
                 from: uId,
                 to: pId,
-                color: { color: result.prediction === 'anomalous' ? '#ef4444' : '#d1d5db' },
-                title: 'Score: ' + score.toFixed(3)
+                color: { color: isAnomaly ? '#ef4444' : '#22c55e' },
+                width: isAnomaly ? 3 : 2,
+                dashes: isAnomaly,
+                title: `<b>Live Prediction:</b> ${result.prediction.toUpperCase()}<br><b>Anomaly Score:</b> ${score.toFixed(4)}<br><b>Rating:</b> ${payload.overall} ★`
             });
 
         } catch (error) {
