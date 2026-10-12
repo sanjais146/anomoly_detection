@@ -830,6 +830,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Global quick preset applicator: loads test cases and triggers inference immediately
+    window.applyPreset = function(presetKey) {
+        const presets = {
+            'genuine_tech': {
+                reviewerID: 'A1IU7S4HCK1XK0',
+                asin: 'B00007E7JU', // 128GB MicroSDXC Card
+                overall: 5.0,
+                unixReviewTime: 1388534400
+            },
+            'topological_anomaly': {
+                reviewerID: 'A3BY5KCNQZSN5U',
+                asin: '0528881469', // Disconnected GPS unit with opposing latent vector
+                overall: 4.0,
+                unixReviewTime: 1395000000
+            },
+            'rating_shock': {
+                reviewerID: 'A203DFCR1SU92S',
+                asin: 'B0002L5R78', // Action Camera
+                overall: 1.0, // Extreme negative review shock on high-rated hub
+                unixReviewTime: 1400000000
+            },
+            'burst_anomaly': {
+                reviewerID: 'A3L9S87K621P0Q',
+                asin: 'B00001P4ZH',
+                overall: 5.0,
+                unixReviewTime: 1405000000
+            }
+        };
+
+        const config = presets[presetKey] || presets['genuine_tech'];
+        
+        // Ensure Anomaly Detection tab is active
+        const analyzeNav = document.querySelector('[data-tab="anomaly-detection"]');
+        if (analyzeNav && !analyzeNav.classList.contains('active')) {
+            analyzeNav.click();
+        }
+
+        const rInput = document.getElementById('reviewerID');
+        const aInput = document.getElementById('asin');
+        const oInput = document.getElementById('overall');
+        const uInput = document.getElementById('unixReviewTime');
+
+        if (rInput) rInput.value = config.reviewerID;
+        if (aInput) aInput.value = config.asin;
+        if (oInput) oInput.value = config.overall;
+        if (uInput) uInput.value = config.unixReviewTime;
+
+        const formEl = document.getElementById('anomaly-form');
+        if (formEl) {
+            formEl.dispatchEvent(new Event('submit'));
+        }
+    };
+
     // Global quick inspector: clicking an anomaly in the table immediately loads its visual justification
     window.inspectInteraction = function(reviewerID, asin, overall, unixReviewTime) {
         const analyzeNav = document.querySelector('[data-tab="anomaly-detection"]');
