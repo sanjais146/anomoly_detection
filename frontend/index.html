@@ -418,7 +418,7 @@
                                 <h3>Analyze Amazon Interaction</h3>
                             </div>
                             <div class="card-body">
-                                <form id="anomaly-form" class="compact-form">
+                                <div id="anomaly-form" class="compact-form">
                                     <div class="form-group">
                                         <label for="reviewerID">Reviewer ID (User)</label>
                                         <input type="text" id="reviewerID" placeholder="e.g., A3BY5KCNQZSN5U" value="A1IU7S4HCK1XK0" required>
@@ -435,10 +435,10 @@
                                         <label for="unixReviewTime">Unix Timestamp</label>
                                         <input type="number" id="unixReviewTime" placeholder="Leave blank for current time" value="1388534400">
                                     </div>
-                                    <button type="button" class="btn btn-primary w-full" id="btn-analyze" onclick="document.getElementById('anomaly-form').dispatchEvent(new Event('submit', { cancelable: true }))">
+                                    <button type="button" class="btn btn-primary w-full" id="btn-analyze" onclick="executeInference()">
                                         <i class="fa-solid fa-microchip"></i> Run TGAT Inference
                                     </button>
-                                </form>
+                                </div>
 
                                 <!-- Interactive Decision Boundary & Sensitivity Slider -->
                                 <div class="mt-4 p-3 rounded text-xs bg-slate-50 border border-slate-200">

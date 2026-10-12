@@ -517,8 +517,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let timelineData = [];
     let distBins = [0,0,0,0,0];
     
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    window.executeInference = async function(event) {
+        if (event && event.preventDefault) event.preventDefault();
         
         btnAnalyze.disabled = true;
         btnAnalyze.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Running Inference...';
@@ -700,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnAnalyze.disabled = false;
             btnAnalyze.innerHTML = '<i class="fa-solid fa-microchip"></i> Run TGAT Inference';
         }
-    });
+    };
 
     // --- 5. System Health Check ---
     const btnHealth = document.getElementById('btn-refresh-health');
@@ -881,9 +881,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (oInput) oInput.value = config.overall;
         if (uInput) uInput.value = config.unixReviewTime;
 
-        const formEl = document.getElementById('anomaly-form');
-        if (formEl) {
-            formEl.dispatchEvent(new Event('submit'));
+        if (typeof window.executeInference === 'function') {
+            window.executeInference();
         }
     };
 
@@ -1003,9 +1002,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('overall').value = overall;
         document.getElementById('unixReviewTime').value = unixReviewTime;
         
-        const formEl = document.getElementById('anomaly-form');
-        if (formEl) {
-            formEl.dispatchEvent(new Event('submit'));
+        if (typeof window.executeInference === 'function') {
+            window.executeInference();
         }
     };
 
@@ -1114,9 +1112,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         const rVal = document.getElementById('reviewerID')?.value;
         const aVal = document.getElementById('asin')?.value;
-        if (rVal && aVal) {
-            const formEl = document.getElementById('anomaly-form');
-            if (formEl) formEl.dispatchEvent(new Event('submit'));
+        if (rVal && aVal && typeof window.executeInference === 'function') {
+            window.executeInference();
         }
     }, 600);
 
