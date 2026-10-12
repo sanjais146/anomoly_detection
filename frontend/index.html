@@ -440,15 +440,33 @@
                                     </button>
                                 </form>
 
-                                <!-- Decision Boundary Summary Card -->
+                                <!-- Interactive Decision Boundary & Sensitivity Slider -->
                                 <div class="mt-4 p-3 rounded text-xs bg-slate-50 border border-slate-200">
-                                    <div class="font-bold text-slate-800 mb-1 flex-between">
-                                        <span><i class="fa-solid fa-scale-balanced text-primary"></i> Decision Rule:</span>
-                                        <span class="font-mono text-primary font-bold">τ_threshold = 0.6668</span>
+                                    <div class="font-bold text-slate-800 mb-2 flex-between">
+                                        <span><i class="fa-solid fa-sliders text-primary"></i> Decision Sensitivity Calibration:</span>
+                                        <span class="font-mono text-primary font-bold" id="calib-threshold-val">τ = 0.6668</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <input type="range" id="threshold-slider" min="0.400" max="0.900" step="0.005" value="0.6668" 
+                                               style="width:100%;cursor:pointer;accent-color:#2563eb"
+                                               oninput="onThresholdChange(this.value)">
+                                        <div class="flex-between text-[10px] text-gray-400 font-mono mt-0.5">
+                                            <span>0.400 (Strict Audit)</span>
+                                            <span style="color:#2563eb;font-weight:600">0.667 (Default)</span>
+                                            <span>0.900 (Permissive)</span>
+                                        </div>
                                     </div>
                                     <div class="space-y-1 text-slate-600 font-sans" style="font-size: 11px;">
-                                        <div><span class="text-green-600 font-bold">✓ Score &lt; 0.6668:</span> <strong>Genuine Interaction</strong> (Topology &amp; time align with normal buyer behavior)</div>
-                                        <div><span class="text-red-600 font-bold">⚠ Score &ge; 0.6668:</span> <strong>Anomalous Interaction</strong> (Unexpected link reconstruction error / rating shock)</div>
+                                        <div><span class="text-green-600 font-bold">✓ Score &lt; <span class="lbl-dyn-thresh">0.6668</span>:</span> <strong>Genuine Interaction</strong> (Organic buyer topology)</div>
+                                        <div><span class="text-red-600 font-bold">⚠ Score &ge; <span class="lbl-dyn-thresh">0.6668</span>:</span> <strong>Anomalous Interaction</strong> (Link reconstruction shock)</div>
+                                    </div>
+                                    <div class="mt-2 pt-2 border-t flex-between" style="font-size: 10px;">
+                                        <span class="text-gray-400">Presets:</span>
+                                        <div style="display:flex;gap:4px">
+                                            <button type="button" class="btn btn-outline" style="padding:1px 6px;font-size:10px" onclick="setThreshold(0.500)">Strict (0.50)</button>
+                                            <button type="button" class="btn btn-outline" style="padding:1px 6px;font-size:10px;border-color:#2563eb;color:#2563eb" onclick="setThreshold(0.6668)">Calibrated (0.667)</button>
+                                            <button type="button" class="btn btn-outline" style="padding:1px 6px;font-size:10px" onclick="setThreshold(0.800)">Permissive (0.80)</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -490,15 +508,20 @@
                                             <span id="res-margin-label" class="font-mono font-bold text-gray-700">Margin: +0.000</span>
                                         </div>
                                         <div style="position:relative;height:12px;background:linear-gradient(to right, #10b981 0%, #10b981 48%, #f59e0b 66.7%, #ef4444 82%, #b91c1c 100%);border-radius:6px;overflow:visible">
-                                            <!-- Threshold Marker Line -->
-                                            <div style="position:absolute;left:66.68%;top:-4px;bottom:-4px;width:2px;background:#111827;z-index:2" title="Decision Threshold: 0.6668"></div>
+                                            <!-- Dynamic Threshold Marker Line -->
+                                            <div id="res-thresh-line" style="position:absolute;left:66.68%;top:-4px;bottom:-4px;width:2px;background:#111827;z-index:2;transition:left 0.2s" title="Decision Threshold: 0.6668"></div>
                                             <!-- Dynamic Needle / Pointer -->
                                             <div id="res-needle" style="position:absolute;left:0%;top:-5px;width:12px;height:22px;margin-left:-6px;background:#ffffff;border:2px solid #111827;border-radius:3px;box-shadow:0 2px 5px rgba(0,0,0,0.35);transition:left 0.45s cubic-bezier(0.4, 0, 0.2, 1);z-index:3"></div>
                                         </div>
                                         <div class="flex-between text-[10px] text-gray-400 mt-1 font-mono">
                                             <span>0.00 (Genuine)</span>
-                                            <span style="color:#d97706;font-weight:600">0.667 (Threshold)</span>
+                                            <span style="color:#d97706;font-weight:600" id="res-spectrum-thresh-label">0.667 (Threshold)</span>
                                             <span style="color:#ef4444">1.00 (Anomaly)</span>
+                                        </div>
+                                        <div class="mt-2 flex justify-end">
+                                            <button type="button" class="btn btn-outline text-xs" style="padding:2px 8px;font-size:11px" onclick="exportAuditReport()">
+                                                <i class="fa-solid fa-file-arrow-down text-primary"></i> Export Causal Audit JSON
+                                            </button>
                                         </div>
                                     </div>
 

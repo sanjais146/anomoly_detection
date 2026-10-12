@@ -539,6 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const result = await response.json();
             
+            // Cache latest result & payload for threshold sensitivity and audit export
+            window.lastInferenceResult = result;
+            window.lastInferencePayload = payload;
+            
             // Remove watermarks since we have live data
             document.getElementById('wm-timeline').style.display = 'none';
             document.getElementById('wm-dist').style.display = 'none';
@@ -881,6 +885,112 @@ document.addEventListener('DOMContentLoaded', () => {
         if (formEl) {
             formEl.dispatchEvent(new Event('submit'));
         }
+    };
+
+    // Global Threshold Sensitivity State
+    window.currentThreshold = 0.6668;
+    window.lastInferenceResult = null;
+    window.lastInferencePayload = null;
+
+    window.onThresholdChange = function(val) {
+        const num = parseFloat(val);
+        window.currentThreshold = num;
+        
+        // Update label in calibration card
+        const calibEl = document.getElementById('calib-threshold-val');
+        if (calibEl) calibEl.innerText = `τ = ${num.toFixed(4)}`;
+        
+        // Update all inline threshold text badges
+        document.querySelectorAll('.lbl-dyn-thresh').forEach(el => {
+            el.innerText = num.toFixed(4);
+        });
+
+        // Update threshold marker line position on the spectrum (0% to 100%)
+        const threshLine = document.getElementById('res-thresh-line');
+        if (threshLine) {
+            threshLine.style.left = `${Math.min(99, Math.max(1, num * 100))}%`;
+            threshLine.title = `Decision Threshold: ${num.toFixed(4)}`;
+        }
+
+        const threshLabel = document.getElementById('res-spectrum-thresh-label');
+        if (threshLabel) {
+            threshLabel.innerText = `${num.toFixed(3)} (Threshold)`;
+        }
+
+        // Dynamically reclassify if inference has been executed
+        if (window.lastInferenceResult) {
+            updateClassificationFromThreshold();
+        }
+    };
+
+    window.setThreshold = function(val) {
+        const slider = document.getElementById('threshold-slider');
+        if (slider) slider.value = val;
+        window.onThresholdChange(val);
+    };
+
+    function updateClassificationFromThreshold() {
+        if (!window.lastInferenceResult) return;
+        const res = window.lastInferenceResult;
+        const score = res.anomaly_probability || 0.0;
+        const thr = window.currentThreshold;
+        
+        const isAnom = score >= thr;
+        const verdictStr = isAnom ? 'Anomalous' : 'Genuine';
+        const riskLevel = isAnom ? (score >= 0.85 ? 'HIGH' : 'MEDIUM') : 'LOW';
+
+        // Re-color circle & verdict
+        resCircle.className = 'score-circle ' + (isAnom ? 'anomalous glow-danger' : 'genuine glow-success');
+        resClass.className = (isAnom ? 'anomalous' : 'genuine');
+        resClass.innerText = verdictStr;
+
+        // Re-compute margin
+        const margin = score - thr;
+        const marginEl = document.getElementById('res-margin-label');
+        if (marginEl) {
+            marginEl.innerText = `Margin: ${margin >= 0 ? '+' : ''}${margin.toFixed(4)}`;
+            marginEl.style.color = margin >= 0 ? '#ef4444' : '#10b981';
+        }
+
+        // Re-badge primary driver
+        const driverBadge = document.getElementById('res-primary-driver');
+        if (driverBadge) {
+            const driverName = isAnom ? 'Link Reconstruction Divergence' : 'Genuine Topology Match';
+            driverBadge.innerText = driverName;
+            driverBadge.className = `badge ${isAnom ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`;
+        }
+    }
+
+    // Export complete causal audit report as a downloadable JSON file
+    window.exportAuditReport = function() {
+        if (!window.lastInferenceResult || !window.lastInferencePayload) {
+            alert("Please run or select an interaction first before exporting.");
+            return;
+        }
+        const report = {
+            export_timestamp: new Date().toISOString(),
+            model: "Causal Temporal Graph Attention Network (T-GAT)",
+            decision_parameters: {
+                calibrated_threshold: window.currentThreshold,
+                temporal_decay_factor_tau: 0.431,
+                latent_space_dimension: 16
+            },
+            interaction_input: window.lastInferencePayload,
+            inference_results: window.lastInferenceResult,
+            verdict: {
+                anomaly_probability: window.lastInferenceResult.anomaly_probability,
+                decision: (window.lastInferenceResult.anomaly_probability >= window.currentThreshold) ? "ANOMALOUS" : "GENUINE",
+                decision_margin: window.lastInferenceResult.anomaly_probability - window.currentThreshold
+            }
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `TGAT_Audit_${window.lastInferencePayload.reviewerID}_${Date.now()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
     };
 
     // Global quick inspector: clicking an anomaly in the table immediately loads its visual justification
