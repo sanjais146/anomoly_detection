@@ -133,7 +133,8 @@ def _process_chunk(chunk, threshold, ui_timeseries, ui_top_anomalies):
             "anomaly_probability": prob,
             "similarity_score": res.get("similarity_score", 0.0),
             "is_anomalous": is_anom,
-            "risk_level": res.get("risk_level", "LOW")
+            "risk_level": res.get("risk_level", "LOW"),
+            "justification": res.get("justification", {})
         }
         ui_timeseries.append(item)
         if is_anom:

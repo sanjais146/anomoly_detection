@@ -134,12 +134,63 @@ def amazon_demo_inference_batch(tx_data_list: list) -> list:
     demo_threshold = DEMO_BATCH_THRESHOLD
     
     results = []
+    now_ts = time.time()
     for i in range(len(tx_data_list)):
         anomaly_prob = float(anomaly_probs[i])
         similarity = float(similarities[i])
         is_anomalous = anomaly_prob >= demo_threshold
         prediction = "anomalous" if is_anomalous else "normal"
         risk_level = "HIGH" if anomaly_prob >= 0.75 else ("MEDIUM" if anomaly_prob >= demo_threshold else "LOW")
+        
+        # 1. Topological vector alignment (cosine similarity & distance in latent 16D space)
+        u_norm = float(u_emb[i].norm().item()) + 1e-6
+        p_norm = float(p_emb[i].norm().item()) + 1e-6
+        dot_prod = float(torch.dot(u_emb[i], p_emb[i]).item())
+        cos_sim = max(-1.0, min(1.0, dot_prod / (u_norm * p_norm)))
+        cos_distance = round(float((1.0 - cos_sim) / 2.0), 4) # 0 = identical vectors, 1 = opposed
+        
+        # 2. Rating deviation vs Amazon Electronics category benchmark (4.2 stars)
+        overall_val = float(tx_data_list[i].get('overall', 5.0))
+        rating_gap = round(abs(overall_val - 4.2), 2)
+        rating_deviation = round(min(1.0, rating_gap / 3.2), 4)
+        
+        # 3. Temporal factor: effective recency decay penalty based on learned tau
+        rev_ts = float(tx_data_list[i].get('unixReviewTime', now_ts))
+        delta_days = max(0.0, (now_ts - rev_ts) / 86400.0)
+        temporal_decay_factor = round(float(np.exp(-tau_u * min(delta_days, 30.0))), 4)
+        temporal_surprise = round(1.0 - temporal_decay_factor, 4)
+        
+        # 4. Link reconstruction surprise (from self-supervised TGAT error)
+        reconstruction_surprise = round(anomaly_prob, 4)
+        
+        # Multi-factor justification dictionary
+        justification = {
+            "factors": {
+                "topological_divergence": round(cos_distance * 100, 1),
+                "reconstruction_loss": round(reconstruction_surprise * 100, 1),
+                "temporal_surprise": round(temporal_surprise * 100, 1),
+                "rating_disparity": round(rating_deviation * 100, 1)
+            },
+            "metrics": {
+                "cosine_similarity": round(cos_sim, 4),
+                "cosine_distance": cos_distance,
+                "temporal_decay_factor": temporal_decay_factor,
+                "delta_days": round(delta_days, 1),
+                "rating_gap": rating_gap,
+                "threshold": demo_threshold,
+                "margin_to_threshold": round(anomaly_prob - demo_threshold, 4)
+            },
+            "primary_driver": (
+                "Topological Latent Divergence" if cos_distance >= 0.55 else (
+                    "Rating Discrepancy" if rating_gap >= 2.0 else "Reconstruction Anomaly"
+                )
+            ),
+            "explanation": (
+                f"Interaction score {anomaly_prob:.4f} is {'ABOVE' if is_anomalous else 'BELOW'} the {demo_threshold:.4f} threshold. "
+                f"Latent 16D cosine alignment is {cos_sim:.2f} (distance {cos_distance:.2f}). "
+                f"Rating of {overall_val:.1f}★ deviates {rating_gap:.1f}★ from historical consensus."
+            )
+        }
         
         results.append({
             "amazon_tgat_enabled": True,
@@ -153,9 +204,10 @@ def amazon_demo_inference_batch(tx_data_list: list) -> list:
             "temporal_decay_tau_product": round(tau_p, 4),
             "temporal_half_life_user_days": round(hl_u, 1),
             "temporal_half_life_product_days": round(hl_p, 1),
-            "user_embedding_norm": round(float(u_emb[i].norm().item()), 4),
-            "product_embedding_norm": round(float(p_emb[i].norm().item()), 4),
+            "user_embedding_norm": round(u_norm, 4),
+            "product_embedding_norm": round(p_norm, 4),
             "temporal_context": f"User decay half-life: {hl_u:.1f}d | Prod decay half-life: {hl_p:.1f}d",
+            "justification": justification,
             "note": "DEMO MODE: Amazon Graph anomaly detection via link reconstruction (cold-start, no historical edges)."
         })
 
